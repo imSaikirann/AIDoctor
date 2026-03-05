@@ -1,111 +1,51 @@
 import { Router } from "express";
-
-import { verifyToken, AuthRequest } from "../middleware/auth.middleware.js";
 import { prisma } from "../lib/prisma.js";
+import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
+// import { requireAuth, requireRole } from "";
 
 const router = Router();
 
-const TIME_SLOTS = [
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "02:00 PM",
-  "04:00 PM",
-];
+// GET VERIFIED DOCTORS
+router.get("/doctors", async (_req, res) => {
+  const doctors = await prisma.doctor.findMany({
+    where: { verified: true }
+  });
 
-/**
- * Get doctors
- */
-router.get("/doctors", async (_, res) => {
-  const doctors = await prisma.doctor.findMany();
   res.json(doctors);
 });
 
-/**
- * Get available slots
- */
-router.get("/slots/:doctorId", async (req, res) => {
-  const { doctorId } = req.params;
+// BOOK APPOINTMENT
+router.post("/book", requireAuth, requireRole("PATIENT"), async (req, res) => {
+  const { doctorId, slot } = req.body;
 
-  const booked = await prisma.appointment.findMany({
-    where: { doctorId },
-    select: { slot: true },
+  const doctor = await prisma.doctor.findUnique({
+    where: { id: doctorId }
   });
 
-  const bookedSlots = booked.map((b) => b.slot);
+  if (!doctor || !doctor.verified) {
+    return res.status(400).json({ message: "Doctor not available" });
+  }
 
-  const available = TIME_SLOTS.filter(
-    (s) => !bookedSlots.includes(s)
-  );
-
-  res.json(available);
-});
-
-/**
- * Book appointment
- */
-router.post("/book", verifyToken, async (req: AuthRequest, res) => {
-  try {
-    const { doctorId, slot } = req.body;
-
-    const appointment = await prisma.appointment.create({
-      data: {
-        doctorId,
-        slot,
-        userId: req.user!.userId,
-      },
-      include: {
-        doctor: {
-          select: {
-            name: true,
-            calLink: true,
-          },
-        },
-      },
-    });
-
-    res.json({
-      success: true,
-      appointment,
-      joinLink: appointment.doctor.calLink || null,
-    });
-  } catch (err: any) {
-    if (err.code === "P2002") {
-      return res.status(400).json({ message: "Slot already booked" });
+  const appointment = await prisma.appointment.create({
+    data: {
+      doctorId,
+      userId: req.user!.id,
+      slot,
+      meetingUrl: doctor.calLink
     }
-    res.status(500).json({ message: "Booking failed" });
-  }
+  });
+
+  res.json(appointment);
 });
 
+// PATIENT APPOINTMENTS
+router.get("/my", requireAuth, async (req, res) => {
+  const data = await prisma.appointment.findMany({
+    where: { userId: req.user!.id },
+    include: { doctor: true }
+  });
 
-/**
- * Get my appointments
- */
-router.get("/my", verifyToken, async (req: AuthRequest, res) => {
-  try {
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        userId: req.user!.userId,
-      },
-      include: {
-        doctor: {
-          select: {
-            name: true,
-            specialization: true,
-            calLink: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    res.json(appointments);
-  } catch (err) {
-    console.error("MY APPOINTMENTS ERROR:", err);
-    res.status(500).json({ message: "Failed to fetch appointments" });
-  }
+  res.json(data);
 });
 
 export default router;

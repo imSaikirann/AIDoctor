@@ -1,44 +1,35 @@
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/auth/useAuth";
+import { Link } from "react-router-dom";
+import { Button } from "../ui/button";
+// import { Button } from "./ui/button";
+// import { useAuth } from "../auth/AuthProvider";
 
-const navItems = [
-  { label: "Book", href: "/" },
-  { label: "My Appointments", href: "/my-appointments" },
-];
-
-export default function Navbar() {
-  const location = useLocation();
+export function Navbar() {
+  const { user, logout } = useAuth();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        {/* Logo */}
-        <Link to="/" className="text-xl font-bold tracking-tight">
-          🩺 HealthAI
-        </Link>
+    <div className="border-b border-zinc-200 bg-white">
+      <div className="mx-auto flex max-w-5xl items-center justify-between p-4">
+        <div className="flex items-center gap-4">
+          <Link to="/" className="font-semibold">Health AI</Link>
+          {!user ? (
+            <>
+              <Link to="/login" className="text-sm text-zinc-700">Login</Link>
+              <Link to="/register/patient" className="text-sm text-zinc-700">Patient Register</Link>
+              <Link to="/register/doctor" className="text-sm text-zinc-700">Doctor Register</Link>
+            </>
+          ) : null}
+        </div>
 
-        {/* Nav */}
-        <nav className="flex items-center gap-2">
-          {navItems.map((item) => {
-            const active = location.pathname === item.href;
-
-            return (
-              <Link key={item.href} to={item.href}>
-                <Button
-                  variant={active ? "default" : "ghost"}
-                  className={cn(
-                    "font-medium",
-                    active && "shadow-sm"
-                  )}
-                >
-                  {item.label}
-                </Button>
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <span className="text-sm text-zinc-700">{user.email} ({user.role})</span>
+              <Button variant="outline" onClick={() => logout().catch(() => {})}>Logout</Button>
+            </>
+          ) : null}
+        </div>
       </div>
-    </header>
+    </div>
   );
 }
