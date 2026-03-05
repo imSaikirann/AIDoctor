@@ -7,27 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
+  password  String
+  role      Role
   createdAt DateTime @default(now())
 
+  // patient appointments
   appointments Appointment[]
+
+  // if role=DOCTOR this exists (1-1)
+  doctorProfile Doctor?
+
+  @@index([role])
 }
 
 model Doctor {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @unique @db.ObjectId
   name           String
   specialization String
-  calLink        String?  // ✅ NEW
+  calLink        String?
+  verified       Boolean  @default(false)
   createdAt      DateTime @default(now())
 
+  user         User          @relation(fields: [userId], references: [id])
   appointments Appointment[]
 }
 
 model Appointment {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   slot      String
+  meetingUrl String?
   createdAt DateTime @default(now())
 
   doctor   Doctor @relation(fields: [doctorId], references: [id])
@@ -37,4 +55,6 @@ model Appointment {
   userId String @db.ObjectId
 
   @@unique([doctorId, slot])
+  @@index([doctorId, createdAt])
+  @@index([userId, createdAt])
 }
