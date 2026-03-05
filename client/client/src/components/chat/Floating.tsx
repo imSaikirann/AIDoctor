@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { sendChatMessage, getTriage } from "@/services/ai.api";
 import { typeText } from "@/lib/typeText";
 
@@ -13,11 +13,51 @@ interface Msg {
   triage?: any;
 }
 
+// speech api typings
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 export default function FloatingChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
+
+  const recognitionRef = useRef<any>(null);
+
+  // 🎤 START VOICE
+  const startVoice = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice recognition not supported");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US"; // change if using multilingual
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
+    recognition.onstart = () => setListening(true);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput((prev) => prev + " " + transcript);
+    };
+
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+
+    recognition.start();
+    recognitionRef.current = recognition;
+  };
 
   // ✅ MAIN SEND HANDLER
   const handleSend = async () => {
@@ -25,7 +65,6 @@ export default function FloatingChat() {
 
     const userText = input;
 
-    // add user message
     setMessages((prev) => [
       ...prev,
       { role: "user", content: userText },
@@ -35,18 +74,16 @@ export default function FloatingChat() {
     setLoading(true);
 
     try {
-      // ===== NORMAL CHAT =====
+      // ===== CHAT =====
       const res = await sendChatMessage(userText);
 
       let aiIndex = -1;
 
-      // create empty assistant message
       setMessages((prev) => {
         aiIndex = prev.length;
         return [...prev, { role: "assistant", content: "" }];
       });
 
-      // typing effect
       await typeText(res.data.reply, (val) => {
         setMessages((prev) => {
           const copy = [...prev];
@@ -58,7 +95,7 @@ export default function FloatingChat() {
         });
       });
 
-      // ===== TRIAGE CALL (SAFE) =====
+      // ===== TRIAGE =====
       try {
         const triageRes = await getTriage(userText);
         const parsed = JSON.parse(triageRes.data.raw);
@@ -74,7 +111,7 @@ export default function FloatingChat() {
       } catch (triageErr) {
         console.warn("Triage parse failed", triageErr);
       }
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -100,6 +137,7 @@ export default function FloatingChat() {
       {/* 📦 Chat Panel */}
       {open && (
         <Card className="fixed bottom-24 right-6 z-50 flex h-[500px] w-[350px] flex-col shadow-2xl">
+
           {/* Header */}
           <div className="border-b p-3 font-semibold">
             AI Health Assistant
@@ -107,6 +145,7 @@ export default function FloatingChat() {
 
           {/* Messages */}
           <div className="flex-1 space-y-3 overflow-y-auto p-3">
+
             {messages.length === 0 && (
               <p className="text-center text-xs text-muted-foreground">
                 Ask about symptoms…
@@ -114,7 +153,7 @@ export default function FloatingChat() {
             )}
 
             {messages.map((msg, i) => {
-              // ✅ TRIAGE CARD RENDER
+
               if (msg.role === "triage" && msg.triage) {
                 return (
                   <TriageCard
@@ -127,7 +166,6 @@ export default function FloatingChat() {
                 );
               }
 
-              // ✅ NORMAL MESSAGE
               return (
                 <div
                   key={i}
@@ -142,26 +180,43 @@ export default function FloatingChat() {
               );
             })}
 
-            {/* typing indicator */}
             {loading && (
               <span className="animate-pulse text-xs text-muted-foreground">
                 AI typing…
               </span>
             )}
+
           </div>
 
           {/* Input */}
           <div className="flex gap-2 border-t p-2">
+
             <Input
               placeholder="Type symptoms..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
             />
-            <Button size="sm" onClick={handleSend} disabled={loading}>
+
+            {/* 🎤 MIC */}
+            <Button
+              size="sm"
+              variant={listening ? "destructive" : "outline"}
+              onClick={startVoice}
+            >
+              {listening ? "🎙" : "🎤"}
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleSend}
+              disabled={loading}
+            >
               Send
             </Button>
+
           </div>
+
         </Card>
       )}
     </>

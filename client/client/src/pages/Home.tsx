@@ -4,7 +4,7 @@ import {
   getSlots,
   bookAppointment,
 } from "@/services/appointment.api";
-import { loginUser } from "@/services/auth.api";
+
 
 import {
   Card,
@@ -13,6 +13,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface Doctor {
   id: string;
@@ -22,6 +24,8 @@ interface Doctor {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
+
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [selectedDoctor, setSelectedDoctor] = useState<string>("");
   const [slots, setSlots] = useState<string[]>([]);
@@ -30,11 +34,11 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // 🔐 login via axios
+  // 🔐 login
   useEffect(() => {
     const login = async () => {
       try {
-        const res = await loginUser("user@test.com");
+        const res = await login("user@test.com");
         setToken(res.data.token);
       } catch (err) {
         console.error("Login failed", err);
@@ -48,13 +52,19 @@ export default function Home() {
 
   // 👨‍⚕️ load doctors
   useEffect(() => {
-    getDoctors().then((res) => setDoctors(res.data));
+    const fetchDoctors = async () => {
+      const res = await getDoctors();
+      setDoctors(res.data);
+    };
+
+    fetchDoctors();
   }, []);
 
   // 📅 load slots
   const loadSlots = async (doctorId: string) => {
     setSelectedDoctor(doctorId);
     setJoinLink(null);
+
     const res = await getSlots(doctorId);
     setSlots(res.data);
   };
@@ -62,7 +72,7 @@ export default function Home() {
   // ✅ book appointment
   const handleBook = async (slot: string) => {
     if (!token) {
-      alert("Auth not ready");
+      alert(t("authNotReady"));
       return;
     }
 
@@ -74,13 +84,13 @@ export default function Home() {
         token
       );
 
-      
-
       setJoinLink(res.data.joinLink || null);
-      alert("Appointment booked!");
+
+      alert(t("appointmentBooked"));
+
       loadSlots(selectedDoctor);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Booking failed");
+      alert(err?.response?.data?.message || t("bookingFailed"));
     } finally {
       setLoading(false);
     }
@@ -88,79 +98,118 @@ export default function Home() {
 
   if (authLoading) {
     return (
-      <div className="p-10 text-center">
-        Loading authentication...
+      <div className="flex h-screen items-center justify-center text-muted-foreground">
+        {t("authenticating")}
       </div>
     );
   }
 
   return (
-    <div className="p-10 max-w-4xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold">
-        🩺 Book Doctor Appointment
-      </h1>
+    <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+
+        <div>
+          <h1 className="text-3xl font-bold">
+            🩺 {t("title")}
+          </h1>
+
+          <p className="text-muted-foreground">
+            {t("chooseDoctor")}
+          </p>
+        </div>
+
+        <LanguageSwitcher />
+
+      </div>
 
       {/* Doctors */}
-      {doctors.map((doc) => (
-        <Card key={doc.id}>
+      <div className="grid gap-6 md:grid-cols-2">
+
+        {doctors.map((doc) => (
+          <Card key={doc.id} className="h-fit">
+
+            <CardHeader>
+              <CardTitle>
+                {doc.name}
+              </CardTitle>
+
+              <p className="text-sm text-muted-foreground">
+                {doc.specialization}
+              </p>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+
+              <Button
+                className="w-full"
+                onClick={() => loadSlots(doc.id)}
+              >
+                {t("viewSlots")}
+              </Button>
+
+              {selectedDoctor === doc.id && (
+                <div className="flex flex-wrap gap-2">
+
+                  {slots.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {t("noSlots")}
+                    </p>
+                  )}
+
+                  {slots.map((slot) => (
+                    <Button
+                      key={slot}
+                      variant="outline"
+                      size="sm"
+                      disabled={loading}
+                      onClick={() => handleBook(slot)}
+                    >
+                      {slot}
+                    </Button>
+                  ))}
+
+                </div>
+              )}
+
+            </CardContent>
+          </Card>
+        ))}
+
+      </div>
+
+      {/* Confirmation */}
+      {joinLink && (
+        <Card className="border-green-500 bg-green-50">
+
           <CardHeader>
             <CardTitle>
-              {doc.name} — {doc.specialization}
+              ✅ {t("appointmentConfirmed")}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <Button onClick={() => loadSlots(doc.id)}>
-              View Slots
-            </Button>
 
-            {/* Slots */}
-            {selectedDoctor === doc.id && (
-              <div className="flex flex-wrap gap-2">
-                {slots.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No slots available
-                  </p>
-                )}
+            <p className="text-sm text-muted-foreground">
+              {t("joinInstruction")}
+            </p>
 
-                {slots.map((slot) => (
-                  <Button
-                    key={slot}
-                    variant="outline"
-                    disabled={loading}
-                    onClick={() => handleBook(slot)}
-                  >
-                    {slot}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-
-      {/* Join Call Card */}
-      {joinLink && (
-        <Card className="border-green-500">
-          <CardHeader>
-            <CardTitle>
-              ✅ Appointment Confirmed
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
             <a
               href={joinLink}
               target="_blank"
               rel="noopener noreferrer"
             >
               <Button className="w-full">
-                🎥 Join Video Call
+                🎥 {t("joinCall")}
               </Button>
             </a>
+
           </CardContent>
+
         </Card>
       )}
+
     </div>
   );
 }

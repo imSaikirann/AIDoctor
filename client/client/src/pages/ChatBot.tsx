@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { sendChatMessage } from "@/services/ai.api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,53 @@ interface Msg {
   content: string;
 }
 
+// SpeechRecognition types
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 export default function ChatBot() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [listening, setListening] = useState(false);
+
+  const recognitionRef = useRef<any>(null);
+
+  // 🎤 Start voice recognition
+  const startVoice = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice recognition not supported in this browser");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US"; // change dynamically if needed
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
+    recognition.onstart = () => setListening(true);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput((prev) => prev + " " + transcript);
+    };
+
+    recognition.onend = () => setListening(false);
+
+    recognition.onerror = () => {
+      setListening(false);
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
+  };
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -56,8 +99,10 @@ export default function ChatBot() {
       </p>
 
       <Card className="flex h-[500px] flex-col">
+
         {/* Messages */}
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
+
           {messages.length === 0 && (
             <p className="text-center text-sm text-muted-foreground">
               Ask about symptoms, diseases, precautions…
@@ -82,20 +127,33 @@ export default function ChatBot() {
               AI is typing…
             </div>
           )}
+
         </div>
 
         {/* Input */}
         <div className="flex gap-2 border-t p-3">
+
           <Input
             placeholder="Describe your symptoms..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
+
+          {/* 🎤 Voice Button */}
+          <Button
+            variant={listening ? "destructive" : "outline"}
+            onClick={startVoice}
+          >
+            {listening ? "🎙 Listening..." : "🎤"}
+          </Button>
+
           <Button onClick={handleSend} disabled={loading}>
             Send
           </Button>
+
         </div>
+
       </Card>
     </div>
   );

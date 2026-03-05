@@ -7,6 +7,8 @@ router.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
 
+
+
     if (!message) {
       return res.status(400).json({ message: "Message required" });
     }

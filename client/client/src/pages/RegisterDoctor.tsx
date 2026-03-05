@@ -3,7 +3,6 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
-import { Toast } from "../components/ui/toast";
 import { apiRegisterDoctor } from "../api/auth";
 import { getErrorMessage } from "../api/http";
 
@@ -14,9 +13,19 @@ export function RegisterDoctor() {
   const [specialization, setSpecialization] = useState("");
   const [calLink, setCalLink] = useState("");
   const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const submit = async () => {
+  const submit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    if (!email || !password || !name || !specialization) {
+      setMsg("Please fill all required fields");
+      return;
+    }
+
     setMsg("");
+    setLoading(true);
+
     try {
       const res = await apiRegisterDoctor({
         email,
@@ -25,52 +34,111 @@ export function RegisterDoctor() {
         specialization,
         calLink: calLink.trim() ? calLink.trim() : undefined
       });
+
       setMsg(res.message);
-    } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
+    } catch (err: unknown) {
+      setMsg(getErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="mx-auto mt-10 max-w-md px-4">
-      <Card>
-        <h2 className="text-lg font-semibold">Doctor Registration</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          After registration, admin must verify your account before you appear to patients.
-        </p>
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+      <Card className="w-full max-w-md p-6 shadow-lg">
 
-        <div className="mt-4 space-y-3">
-          <div>
-            <Label>Email</Label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <Label>Password</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <div>
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <Label>Specialization</Label>
-            <Input value={specialization} onChange={(e) => setSpecialization(e.target.value)} />
-          </div>
-          <div>
-            <Label>Cal.com Event Link</Label>
+        {/* Header */}
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Doctor Registration
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Your account must be verified by admin before patients can book.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={submit} className="space-y-4">
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
             <Input
+              id="name"
+              placeholder="Dr. John Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="doctor@example.com"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="specialization">Specialization</Label>
+            <Input
+              id="specialization"
+              placeholder="Cardiologist, Dermatologist..."
+              value={specialization}
+              onChange={(e) => setSpecialization(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="calLink">Cal.com Event Link</Label>
+            <Input
+              id="calLink"
               placeholder="https://cal.com/yourname/30min"
               value={calLink}
               onChange={(e) => setCalLink(e.target.value)}
             />
-            <p className="mt-1 text-xs text-zinc-500">
-              Use the event type link (not dashboard link).
+            <p className="text-xs text-muted-foreground">
+              Use your Cal.com event booking link (not dashboard link).
             </p>
           </div>
 
-          <Button onClick={submit}>Register Doctor</Button>
-          <Toast message={msg} />
-        </div>
+          {/* Message */}
+          {msg && (
+            <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+              {msg}
+            </div>
+          )}
+
+          {/* Button */}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? "Registering..." : "Register Doctor"}
+          </Button>
+
+        </form>
+
       </Card>
     </div>
   );

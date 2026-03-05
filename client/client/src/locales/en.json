@@ -1,0 +1,13 @@
+{
+  "title": "Book Doctor Appointment",
+  "chooseDoctor": "Choose a doctor and schedule your consultation",
+  "viewSlots": "View Available Slots",
+  "noSlots": "No slots available",
+  "appointmentConfirmed": "Appointment Confirmed",
+  "joinCall": "Join Video Call",
+  "joinInstruction": "Your consultation is scheduled. Join the video call at the scheduled time.",
+  "authenticating": "Authenticating user...",
+  "authNotReady": "Authentication not ready",
+  "appointmentBooked": "Appointment booked!",
+  "bookingFailed": "Booking failed"
+}

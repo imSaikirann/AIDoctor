@@ -1,13 +1,13 @@
-import { http } from "./http";
+import axios from "axios";
 import type { User } from "../types";
 
 export async function apiLogin(email: string, password: string): Promise<User> {
-  const res = await http.post<User>("/api/auth/login", { email, password });
+  const res = await axios.post<User>("/api/auth/login", { email, password });
   return res.data;
 }
 
 export async function apiRegisterPatient(email: string, password: string): Promise<User> {
-  const res = await http.post<User>("/api/auth/register/patient", { email, password });
+  const res = await axios.post<User>("/api/auth/register/patient", { email, password });
   return res.data;
 }
 
@@ -18,15 +18,15 @@ export async function apiRegisterDoctor(payload: {
   specialization: string;
   calLink?: string;
 }): Promise<{ message: string; user: User }> {
-  const res = await http.post<{ message: string; user: User }>("/api/auth/register/doctor", payload);
+  const res = await axios.post<{ message: string; user: User }>("/api/auth/register/doctor", payload);
   return res.data;
 }
 
 export async function apiMe(): Promise<User> {
-  const res = await http.get<User>("/api/auth/me");
+  const res = await axios.get<User>("/api/auth/me");
   return res.data;
 }
 
 export async function apiLogout(): Promise<void> {
-  await http.post("/api/auth/logout");
+  await axios.post("/api/auth/logout");
 }
