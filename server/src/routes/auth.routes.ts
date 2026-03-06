@@ -82,4 +82,46 @@ router.post("/login", async (req, res) => {
   res.json(user);
 });
 
+// LOGOUT
+router.post("/logout", (_req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+  });
+
+  res.json({ message: "Logged out successfully" });
+});
+
+type JwtPayload = {
+  id: string;
+  role: "ADMIN" | "DOCTOR" | "PATIENT";
+};
+
+router.get("/me", async (req, res) => {
+  const token = req.cookies?.token;
+
+  if (!token) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as JwtPayload;
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      include: { doctorProfile: true }
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch {
+    res.status(401).json({ message: "Invalid token" });
+  }
+});
+
 export default router;

@@ -1,31 +1,59 @@
+import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const count = await prisma.doctor.count();
+function getEnv(name: string): string {
+  const value = process.env[name];
+  if (!value || value.trim().length === 0) {
+    throw new Error(`Missing environment variable: ${name}`);
+  }
+  return value.trim();
+}
 
-  if (count > 0) {
-    console.log("Doctors already seeded");
+async function main(): Promise<void> {
+  const email = getEnv("ADMIN_EMAIL").toLowerCase();
+  const password = getEnv("ADMIN_PASSWORD");
+
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email }
+  });
+
+  if (existingAdmin) {
+    console.log(`Admin already exists: ${existingAdmin.email}`);
     return;
   }
 
- await prisma.doctor.createMany({
-  data: [
-    {
-      name: "Dr. Rajesh Kumar",
-      specialization: "Cardiologist",
-      calLink: "https://cal.com/rajesh-kumar",
-    },
-    {
-      name: "Dr. Priya Sharma",
-      specialization: "Dermatologist",
-      calLink: "https://cal.com/priya-sharma",
-    },
-  ],
-});
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  console.log("✅ Doctors seeded");
+  const admin = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      role: "ADMIN"
+    },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      createdAt: true
+    }
+  });
+
+  console.log("Admin created successfully:");
+  console.log(admin);
 }
 
-main().finally(() => prisma.$disconnect());
+main()
+  .catch((error: unknown) => {
+    if (error instanceof Error) {
+      console.error("Seed failed:", error.message);
+    } else {
+      console.error("Seed failed:", error);
+    }
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
