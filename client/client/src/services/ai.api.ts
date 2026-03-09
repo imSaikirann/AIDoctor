@@ -1,8 +1,8 @@
 import { api } from "@/lib/axios";
 
 export const sendChatMessage = (message: string) =>
-  api.post("/api/ai/chat", { message });
+  api.post("/ai/chat", { message });
 
 
 export const getTriage = (message: string) =>
-  api.post("/api/ai/triage", { message });
+  api.post("/ai/triage", { message });

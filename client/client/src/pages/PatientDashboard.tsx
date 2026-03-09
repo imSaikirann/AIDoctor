@@ -1,133 +1,200 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { DoctorPublic, Appointment } from "../types";
-// import { apiBookFromCal, apiListDoctors, apiMyAppointments } from "../api/appointments";
-import { getErrorMessage } from "../api/http";
+import {
+  apiGetVerifiedDoctors,
+  apiGetSlots,
+  apiBookAppointment,
+  apiMyAppointments,
+} from "../services/appointment";
 import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Toast } from "../components/ui/toast";
-import { CalModal } from "@/components/CallModal";
-import { apiBookFromCal, apiListDoctors, apiMyAppointments } from "@/api/appointment";
-// import { CalModal } from "../components/CalModal";
 
 export function PatientDashboard() {
   const [doctors, setDoctors] = useState<DoctorPublic[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [msg, setMsg] = useState("");
-  const [calOpen, setCalOpen] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState<DoctorPublic | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [booking, setBooking] = useState(false);
 
-  const selectedCalLink = useMemo(() => selectedDoctor?.calLink ?? "", [selectedDoctor]);
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const load = async () => {
-    const [d, a] = await Promise.all([apiListDoctors(), apiMyAppointments()]);
-    setDoctors(d);
-    setAppointments(a);
-  };
+    setLoading(true);
+    setMsg("");
 
-  useEffect(() => {
-  const fetchData = async () => {
     try {
-      const [d, a] = await Promise.all([
-        apiListDoctors(),
+      const [doctorsData, appointmentsData] = await Promise.all([
+        apiGetVerifiedDoctors(),
         apiMyAppointments(),
       ]);
 
-      setDoctors(d);
-      setAppointments(a);
-    } catch {
-      // optional error handling
+      setDoctors(doctorsData);
+      setAppointments(appointmentsData);
+    } catch (error) {
+      console.log(error);
+      setMsg("Failed to load dashboard data.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  fetchData();
-}, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const openCal = (doc: DoctorPublic) => {
+  const handleViewSlots = async (doctorId: string) => {
     setMsg("");
-    if (!doc.calLink) {
-      setMsg("This doctor has no Cal.com link configured");
-      return;
-    }
-    setSelectedDoctor(doc);
-    setCalOpen(true);
-  };
-
-  const onBooked = async (data: { startTime: string; endTime?: string; videoCallUrl?: string; uid?: string }) => {
-    // This is fired by Cal embed: bookingSuccessfulV2 :contentReference[oaicite:4]{index=4}
-    if (!selectedDoctor) return;
+    setSelectedDoctorId(doctorId);
+    setLoadingSlots(true);
+    setAvailableSlots([]);
 
     try {
-      // Save to your DB so Doctor/Admin dashboards show it
-      await apiBookFromCal({
-        doctorId: selectedDoctor.id,
-        slot: data.startTime,
-        meetingUrl: data.videoCallUrl
-      });
+      const res = await apiGetSlots(doctorId);
+      setAvailableSlots(res.availableSlots);
+    } catch (error) {
+      console.log(error);
+      setMsg("Failed to load available slots.");
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
 
-      setMsg("Booking created and saved!");
-      setCalOpen(false);
-      await load();
-    } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
-      setCalOpen(false);
+  const handleBook = async (doctorId: string, slot: string) => {
+    setMsg("");
+    setBooking(true);
+
+    try {
+      await apiBookAppointment({ doctorId, slot });
+      setMsg("Appointment booked successfully.");
+
+      const slotsRes = await apiGetSlots(doctorId);
+      setAvailableSlots(slotsRes.availableSlots);
+
+      const myAppointments = await apiMyAppointments();
+      setAppointments(myAppointments);
+    } catch (error) {
+      console.log(error);
+      setMsg("Failed to book appointment.");
+    } finally {
+      setBooking(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <div>
         <h2 className="text-xl font-semibold">Patient Dashboard</h2>
-        <p className="text-sm text-zinc-600">Book verified doctors using Cal.com embed.</p>
+        <p className="text-sm text-zinc-600">
+          Book appointments with verified doctors.
+        </p>
         <Toast message={msg} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {doctors.map((d) => (
-          <Card key={d.id}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-base font-semibold">{d.name}</div>
-                <div className="text-sm text-zinc-700">{d.specialization}</div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  {d.calLink ? "Cal link connected" : "No Cal link"}
+      <div>
+        <h3 className="mb-3 text-lg font-semibold">Verified Doctors</h3>
+
+        {loading ? (
+          <div className="text-sm text-zinc-600">Loading doctors...</div>
+        ) : doctors.length === 0 ? (
+          <div className="text-sm text-zinc-600">No verified doctors found.</div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {doctors.map((doctor) => (
+              <Card key={doctor.id}>
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-base font-semibold">
+                        {doctor.name}
+                      </div>
+                      <div className="text-sm text-zinc-700">
+                        {doctor.specialization}
+                      </div>
+                    </div>
+
+                    <Button onClick={() => handleViewSlots(doctor.id)}>
+                      View Slots
+                    </Button>
+                  </div>
+
+                  {selectedDoctorId === doctor.id ? (
+                    <div className="border-t border-zinc-200 pt-3">
+                      <div className="mb-2 text-sm font-medium">
+                        Available Slots
+                      </div>
+
+                      {loadingSlots ? (
+                        <div className="text-sm text-zinc-600">
+                          Loading slots...
+                        </div>
+                      ) : availableSlots.length === 0 ? (
+                        <div className="text-sm text-zinc-600">
+                          No slots available.
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {availableSlots.map((slot) => (
+                            <Button
+                              key={slot}
+                              variant="outline"
+                              disabled={booking}
+                              onClick={() => handleBook(doctor.id, slot)}
+                            >
+                              {booking ? "Booking..." : slot}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-              <Button onClick={() => openCal(d)} disabled={!d.calLink}>
-                Book
-              </Button>
-            </div>
-          </Card>
-        ))}
+              </Card>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
         <h3 className="text-lg font-semibold">My Appointments</h3>
+
         <div className="mt-3 space-y-3">
-          {appointments.map((a) => (
-            <Card key={a.id}>
-              <div className="text-sm">
-                <div className="font-medium">{a.slot}</div>
-                <div className="text-zinc-700">
-                  {a.doctor ? `${a.doctor.name} (${a.doctor.specialization})` : ""}
+          {loading ? (
+            <div className="text-sm text-zinc-600">
+              Loading appointments...
+            </div>
+          ) : appointments.length === 0 ? (
+            <div className="text-sm text-zinc-600">No bookings yet.</div>
+          ) : (
+            appointments.map((appointment) => (
+              <Card key={appointment.id}>
+                <div className="text-sm">
+                  <div className="font-medium">{appointment.slot}</div>
+
+                  <div className="text-zinc-700">
+                    {appointment.doctor
+                      ? `${appointment.doctor.name} (${appointment.doctor.specialization})`
+                      : "Doctor details not available"}
+                  </div>
+
+                  {appointment.meetingUrl ? (
+                    <a
+                      className="text-sm text-blue-600 underline"
+                      href={appointment.meetingUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Join meeting
+                    </a>
+                  ) : null}
                 </div>
-                {a.meetingUrl ? (
-                  <a className="text-sm text-blue-600 underline" href={a.meetingUrl} target="_blank" rel="noreferrer">
-                    Join meeting
-                  </a>
-                ) : null}
-              </div>
-            </Card>
-          ))}
-          {appointments.length === 0 ? <div className="text-sm text-zinc-600">No bookings yet.</div> : null}
+              </Card>
+            ))
+          )}
         </div>
       </div>
-
-      <CalModal
-        open={calOpen}
-        onClose={() => setCalOpen(false)}
-        calLink={selectedCalLink}
-        onBooked={onBooked}
-      />
     </div>
   );
 }

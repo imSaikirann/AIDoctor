@@ -6,7 +6,10 @@ import authRoutes from "./routes/auth.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import feedbackRoutes from "./routes/feedback.routes.js";
+import medicineRoutes from "./routes/medicine.routes.js";
 
+import cartRoutes from "./routes/cart.routes.js";
+import orderRoutes from "./routes/order.routes.js";
 import cookieParser from "cookie-parser";
 
 
@@ -29,6 +32,12 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/feedback", feedbackRoutes)
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/ai", aiRoutes);
+
+
+app.use("/api/medicines", medicineRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/orders", orderRoutes);
+
 app.get("/health", (_, res) => {
   res.json({ status: "OK" });
 });

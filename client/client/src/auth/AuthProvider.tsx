@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { apiLogout, apiMe } from "../api/auth";
+// import { apiLogout, apiMe } from "../api/auth";
 import { AuthCtx, type AuthState } from "./auth-context";
 import type { User } from "../types";
+import { apiLogout, apiMe } from "@/services/auth.api";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

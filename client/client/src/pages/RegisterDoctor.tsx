@@ -3,8 +3,10 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
-import { apiRegisterDoctor } from "../api/auth";
-import { getErrorMessage } from "../api/http";
+import { apiRegisterDoctor } from "@/services/auth.api";
+// import { getErrorMessage } from "@/api/http";
+// import { apiRegisterDoctor } from "../api/auth";
+// import { getErrorMessage } from "../api/http";
 
 export function RegisterDoctor() {
   const [email, setEmail] = useState("");
@@ -37,7 +39,8 @@ export function RegisterDoctor() {
 
       setMsg(res.message);
     } catch (err: unknown) {
-      setMsg(getErrorMessage(err));
+    //   setMsg(getErrorMessage(err));
+    console.log(err)
     } finally {
       setLoading(false);
     }
