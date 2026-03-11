@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiRegisterPatient } from "../api/auth";
-import { getErrorMessage } from "../api/http";
+// import { apiRegisterPatient } from "../api/auth";
+// import { getErrorMessage } from "../api/http";
 import { useAuth } from "@/auth/useAuth";
 
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
+import { apiRegisterPatient } from "@/services/auth.api";
 
 export function RegisterPatient() {
   const nav = useNavigate();
@@ -34,7 +35,8 @@ export function RegisterPatient() {
       await refresh();
       nav("/");
     } catch (err: unknown) {
-      setMsg(getErrorMessage(err));
+    //   setMsg(getErrorMessage(err));
+    console.log(err)
     } finally {
       setLoading(false);
     }

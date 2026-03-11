@@ -2,60 +2,128 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "@prisma/client";
 
 const router = Router();
 
 // PATIENT REGISTER
 router.post("/register/patient", async (req, res) => {
-  const { email, password } = req.body;
+    try {
+      const email = req.body.email?.trim().toLowerCase();
+      const password = req.body.password?.trim();
 
-  const hashed = await bcrypt.hash(password, 10);
+      if (!email || !password) {
+        res.status(400).json({ message: "Email and password are required" });
+        return;
+      }
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashed,
-      role: "PATIENT"
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        res.status(409).json({ message: "Email already registered" });
+        return;
+      }
+
+      const hashed = await bcrypt.hash(password, 10);
+
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashed,
+          role: "PATIENT",
+        },
+      });
+
+      const token = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET as string
+      );
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+
+      res.status(201).json(user);
+    } catch (error: unknown) {
+      console.log("REGISTER PATIENT ERROR:", error);
+
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        res.status(409).json({ message: "Email already registered" });
+        return;
+      }
+
+      res.status(500).json({ message: "Failed to register patient" });
     }
   });
 
-  const token = jwt.sign(
-    { id: user.id, role: user.role },
-    process.env.JWT_SECRET as string
-  );
-
-  res.cookie("token", token, { httpOnly: true });
-
-  res.json(user);
-});
-
 // DOCTOR REGISTER
-router.post("/register/doctor", async (req, res) => {
-  const { email, password, name, specialization, calLink } = req.body;
+router.post("/register/doctor", async (req, res) =>{
+    try {
+      const email = req.body.email?.trim().toLowerCase();
+      const password = req.body.password?.trim();
+      const name = req.body.name?.trim();
+      const specialization = req.body.specialization?.trim();
+      const calLink = req.body.calLink?.trim();
 
-  const hashed = await bcrypt.hash(password, 10);
-
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashed,
-      role: "DOCTOR",
-      doctorProfile: {
-        create: {
-          name,
-          specialization,
-          calLink
-        }
+      if (!email || !password || !name || !specialization) {
+        res.status(400).json({
+          message: "Email, password, name and specialization are required",
+        });
+        return;
       }
-    },
-    include: { doctorProfile: true }
-  });
 
-  res.json({
-    message: "Doctor registered, waiting for admin approval",
-    user
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        res.status(409).json({ message: "Email already registered" });
+        return;
+      }
+
+      const hashed = await bcrypt.hash(password, 10);
+
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashed,
+          role: "DOCTOR",
+          doctorProfile: {
+            create: {
+              name,
+              specialization,
+              calLink: calLink || null,
+            },
+          },
+        },
+        include: { doctorProfile: true },
+      });
+
+      res.status(201).json({
+        message: "Doctor registered, waiting for admin approval",
+        user,
+      });
+    } catch (error: unknown) {
+      console.log("REGISTER DOCTOR ERROR:", error);
+
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        res.status(409).json({ message: "Email already registered" });
+        return;
+      }
+
+      res.status(500).json({ message: "Failed to register doctor" });
+    }
   });
-});
 
 // LOGIN
 router.post("/login", async (req, res) => {

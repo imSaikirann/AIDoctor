@@ -3,13 +3,8 @@ import AppLayout from "@/components/layout/AppLayout";
 import Home from "./pages/Home";
 import MyAppointments from "./pages/MyAppointments";
 import ChatBot from "./pages/ChatBot";
-// import Login from "./pages/Login";
-// import RegisterPatient from "./pages/RegisterPatient";
-// import RegisterDoctor from "./pages/RegisterDoctor";
-// import PatientDashboard from "./pages/PatientDashboard";
-// import DoctorDashboard from "./pages/DoctorDashboard";
-// import AdminDashboard from "./pages/AdminDashboard";
 import { RequireAuth } from "./auth/RequireAuth";
+// import { PublicOnly } from "./auth/PublicOnly";
 import { useAuth } from "./auth/useAuth";
 import { Login } from "./pages/Login";
 import { RegisterPatient } from "./pages/RegisterPatient";
@@ -17,7 +12,12 @@ import { RegisterDoctor } from "./pages/RegisterDoctor";
 import { PatientDashboard } from "./pages/PatientDashboard";
 import { DoctorDashboard } from "./pages/DoctorDashboard";
 import { AdminDashboard } from "./pages/AdminDashboard";
-// import { useAuth } from "./auth/AuthProvider";
+import { PublicOnly } from "./pages/PublicOnly";
+import MedicinesPage from "./pages/MedicinePage";
+import CartPage from "./pages/CartPage";
+import MyOrdersPage from "./pages/MyOrdersPage";
+import AdminMedicinesPage from "./pages/AdminMedicinesPage";
+import AdminOrdersPage from "./pages/AdminOrdersPage";
 
 function RoleRedirect() {
   const { user, loading } = useAuth();
@@ -37,16 +37,37 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<AppLayout />}>
-          {/* Public */}
           <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register/patient" element={<RegisterPatient />} />
-          <Route path="/register/doctor" element={<RegisterDoctor />} />
 
-          {/* Smart redirect based on role */}
+          <Route
+            path="/login"
+            element={
+              <PublicOnly>
+                <Login />
+              </PublicOnly>
+            }
+          />
+
+          <Route
+            path="/register/patient"
+            element={
+              <PublicOnly>
+                <RegisterPatient />
+              </PublicOnly>
+            }
+          />
+
+          <Route
+            path="/register/doctor"
+            element={
+              <PublicOnly>
+                <RegisterDoctor />
+              </PublicOnly>
+            }
+          />
+
           <Route path="/dashboard" element={<RoleRedirect />} />
 
-          {/* PATIENT */}
           <Route
             path="/patient"
             element={
@@ -65,7 +86,6 @@ function App() {
             }
           />
 
-          {/* DOCTOR */}
           <Route
             path="/doctor"
             element={
@@ -75,7 +95,6 @@ function App() {
             }
           />
 
-          {/* ADMIN */}
           <Route
             path="/admin"
             element={
@@ -85,7 +104,6 @@ function App() {
             }
           />
 
-          {/* AI Chat (accessible to logged users only) */}
           <Route
             path="/ai-chat"
             element={
@@ -95,7 +113,51 @@ function App() {
             }
           />
 
-          {/* Catch all */}
+          <Route
+            path="/medicines"
+            element={
+              <RequireAuth role="PATIENT">
+                <MedicinesPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/cart"
+            element={
+              <RequireAuth role="PATIENT">
+                <CartPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/orders"
+            element={
+              <RequireAuth role="PATIENT">
+                <MyOrdersPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/admin/medicines"
+            element={
+              <RequireAuth role="ADMIN">
+                <AdminMedicinesPage />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+  path="/admin/orders"
+  element={
+    <RequireAuth role="ADMIN">
+      <AdminOrdersPage />
+    </RequireAuth>
+  }
+/>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
