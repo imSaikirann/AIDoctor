@@ -12,6 +12,8 @@ function getEnv(name: string): string {
   return value.trim();
 }
 
+
+
 async function main(): Promise<void> {
   const email = getEnv("ADMIN_EMAIL").toLowerCase();
   const password = getEnv("ADMIN_PASSWORD");

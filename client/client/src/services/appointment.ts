@@ -15,6 +15,12 @@ export async function apiGetSlots(
   return res.data;
 }
 
+
+export async function apiEmergencyBooking(): Promise<DoctorPublic[]> {
+  const res = await api.get<DoctorPublic[]>("/appointment/emergency");
+  return res.data;
+}
+
 export async function apiBookAppointment(payload: {
   doctorId: string;
   slot: string;

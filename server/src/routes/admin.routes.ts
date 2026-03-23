@@ -34,7 +34,6 @@ router.get("/users", async (_req: Request, res: Response): Promise<void> => {
       select: {
         id: true,
         email: true,
-        role: true,
         createdAt: true,
         doctorProfile: true,
       },

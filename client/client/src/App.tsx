@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
-import Home from "./pages/Home";
+
 import MyAppointments from "./pages/MyAppointments";
 import ChatBot from "./pages/ChatBot";
 import { RequireAuth } from "./auth/RequireAuth";
@@ -18,6 +18,7 @@ import CartPage from "./pages/CartPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
 import AdminMedicinesPage from "./pages/AdminMedicinesPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
+import Home from "./pages/Home";
 
 function RoleRedirect() {
   const { user, loading } = useAuth();
