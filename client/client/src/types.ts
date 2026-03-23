@@ -32,6 +32,7 @@ export type Appointment = {
   doctorId: string;
   userId: string;
   slot: string;
+  status?: string;
   meetingUrl?: string;
   createdAt?: string;
   doctor?: DoctorPublic;
@@ -40,6 +41,15 @@ export type Appointment = {
     email: string;
   };
   feedback?: Feedback | null;
+};
+
+export type EmergencyBookingResponse = {
+  message: string;
+  appointmentId: string;
+  doctor: DoctorPublic;
+  slot: string;
+  meetingUrl?: string;
+  appointment: Appointment;
 };
 
 
@@ -65,6 +75,41 @@ export type Feedback = {
     slot: string;
     meetingUrl?: string;
   };
+};
+
+export type MedicalRecord = {
+  id: string;
+  patientId: string;
+  createdByUserId: string;
+  createdByRole: Role;
+  title: string;
+  recordType: string;
+  content: string;
+  eventAt: string;
+  createdAt: string;
+  updatedAt: string;
+  patient: {
+    id: string;
+    email: string;
+  };
+  createdBy: {
+    id: string;
+    email: string;
+    role: Role;
+  };
+};
+
+export type DoctorPatient = {
+  id: string;
+  email: string;
+};
+
+export type CreateMedicalRecordPayload = {
+  patientId?: string;
+  title: string;
+  recordType: string;
+  content: string;
+  eventAt?: string;
 };
 
 

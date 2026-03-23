@@ -8,6 +8,7 @@ interface NavLinkItem {
 
 const PATIENT_LINKS: NavLinkItem[] = [
   { to: "/patient", label: "Dashboard" },
+  { to: "/medical-records", label: "Medical records" },
   { to: "/my-appointments", label: "Appointments" },
   { to: "/medicines", label: "Medicines" },
   { to: "/cart", label: "Cart" },
@@ -17,6 +18,7 @@ const PATIENT_LINKS: NavLinkItem[] = [
 
 const DOCTOR_LINKS: NavLinkItem[] = [
   { to: "/doctor", label: "Dashboard" },
+  { to: "/medical-records", label: "Medical records" },
 ];
 
 const ADMIN_LINKS: NavLinkItem[] = [

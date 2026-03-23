@@ -5,6 +5,7 @@ import aiRoutes from "./routes/ai.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import appointmentRoutes from "./routes/appointment.routes.js";
 import emergencyRoutes from "./routes/emergency.routes.js";
+import medicalRecordRoutes from "./routes/medicalRecord.routes.js";
 
 import adminRoutes from "./routes/admin.routes.js";
 import feedbackRoutes from "./routes/feedback.routes.js";
@@ -33,7 +34,9 @@ app.use("/api/admin", adminRoutes);
 
 app.use("/api/feedback", feedbackRoutes)
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/appointments", emergencyRoutes);
 app.use("/api/appointment", emergencyRoutes);
+app.use("/api/records", medicalRecordRoutes);
 
 app.use("/api/ai", aiRoutes);
 

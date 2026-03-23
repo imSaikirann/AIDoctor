@@ -29,6 +29,8 @@ model User {
   appointments  Appointment[]
   doctorProfile Doctor?
   feedbacks     Feedback[]
+  medicalRecords MedicalRecord[] @relation("PatientMedicalRecords")
+  createdMedicalRecords MedicalRecord[] @relation("MedicalRecordAuthor")
 
   cart          Cart?
   orders        Order[]
@@ -173,4 +175,24 @@ model OrderItem {
 
   @@index([orderId])
   @@index([medicineId])
+}
+
+model MedicalRecord {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  patientId        String    @db.ObjectId
+  createdByUserId  String    @db.ObjectId
+  createdByRole    Role
+  recordType       String
+  title            String
+  encryptedContent String
+  eventAt          DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  patient          User      @relation("PatientMedicalRecords", fields: [patientId], references: [id])
+  createdBy        User      @relation("MedicalRecordAuthor", fields: [createdByUserId], references: [id])
+
+  @@index([patientId, eventAt])
+  @@index([createdByUserId, createdAt])
+  @@index([recordType, createdAt])
 }
