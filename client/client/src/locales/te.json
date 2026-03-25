@@ -1,8 +1,124 @@
 {
   "title": "డాక్టర్ అపాయింట్మెంట్ బుక్ చేయండి",
-  "chooseDoctor": "డాక్టర్‌ను ఎంచుకుని మీ కన్సల్టేషన్ షెడ్యూల్ చేయండి",
+  "chooseDoctor": "డాక్టర్ ఎంచుకుని మీ కన్సల్టేషన్ షెడ్యూల్ చేయండి",
   "viewSlots": "లభ్యమైన స్లాట్లు చూడండి",
   "noSlots": "స్లాట్లు లేవు",
   "appointmentConfirmed": "అపాయింట్మెంట్ నిర్ధారించబడింది",
-  "joinCall": "వీడియో కాల్‌లో చేరండి"
+  "joinCall": "వీడియో కాల్ జాయిన్ అవ్వండి",
+  "joinInstruction": "మీ కన్సల్టేషన్ షెడ్యూల్ అయింది. సమయానికి వీడియో కాల్ జాయిన్ అవ్వండి.",
+  "authenticating": "వినియోగదారుని ధృవీకరిస్తున్నాం...",
+  "authNotReady": "ఆథెంటికేషన్ సిద్ధంగా లేదు",
+  "appointmentBooked": "అపాయింట్మెంట్ బుక్ అయింది!",
+  "bookingFailed": "బుకింగ్ విఫలమైంది",
+  "language": {
+    "hi": "హిందీ",
+    "te": "తెలుగు"
+  },
+  "roles": {
+    "ADMIN": "అడ్మిన్",
+    "DOCTOR": "డాక్టర్",
+    "PATIENT": "రోగి"
+  },
+  "nav": {
+    "dashboard": "డాష్‌బోర్డ్",
+    "medicalRecords": "మెడికల్ రికార్డులు",
+    "appointments": "అపాయింట్మెంట్లు",
+    "medicines": "ఔషధాలు",
+    "cart": "కార్ట్",
+    "orders": "ఆర్డర్లు",
+    "aiChat": "ఎఐ చాట్",
+    "login": "లాగిన్",
+    "patientRegister": "రోగి రిజిస్టర్",
+    "doctorRegister": "డాక్టర్ రిజిస్టర్",
+    "signOut": "సైన్ అవుట్"
+  },
+  "home": {
+    "title": {
+      "line1": "మీ",
+      "highlight": "డాక్టర్‌ని కనుగొని,",
+      "line2": "సెకన్లలో బుక్ చేయండి."
+    },
+    "subtitle": "వెరిఫైడ్ స్పెషలిస్టులు - తక్షణ వీడియో కన్సల్టేషన్",
+    "availableDoctors": "లభ్యమైన డాక్టర్లు",
+    "loadingDoctors": "డాక్టర్లు లోడ్ అవుతున్నారు...",
+    "noDoctors": "డాక్టర్లు లభించలేదు.",
+    "availableSlots": "ఈరోజు లభ్యమైన స్లాట్లు",
+    "hideSlots": "స్లాట్లు దాచండి",
+    "pickTime": "సమయం ఎంచుకోండి",
+    "loadingSlots": "స్లాట్లు లోడ్ అవుతున్నాయి...",
+    "booking": "బుక్ అవుతోంది...",
+    "confirmationPrefix": "మీ వీడియో కన్సల్టేషన్",
+    "confirmationMid": "కోసం బుక్ అయింది",
+    "emergency": {
+      "openForm": "లాగిన్ లేకుండా ఎమర్జెన్సీ బుకింగ్",
+      "hideForm": "ఎమర్జెన్సీ ఫారమ్ దాచండి",
+      "formTitle": "ఎమర్జెన్సీ డాక్టర్ బుక్ చేయండి",
+      "formSubtitle": "వివరాలు నింపి వెంటనే మీటింగ్ లింక్ పొందండి.",
+      "email": "ఈమెయిల్",
+      "phone": "ఫోన్ నంబర్",
+      "problem": "మీ సమస్య వివరించండి",
+      "noDoctors": "డాక్టర్లు అందుబాటులో లేరు",
+      "bookNow": "ఎమర్జెన్సీ మీట్ బుక్ చేయండి",
+      "booking": "ఎమర్జెన్సీ బుక్ అవుతోంది...",
+      "validation": "దయచేసి ఈమెయిల్, ఫోన్, సమస్య, డాక్టర్ ఎంచుకోండి.",
+      "bookingFailed": "ఎమర్జెన్సీ బుకింగ్ విఫలమైంది"
+    }
+  },
+  "doctor": {
+    "dashboardTitle": "డాక్టర్ డాష్‌బోర్డ్",
+    "dashboardSubtitle": "ఇక్కడ మీ అపాయింట్మెంట్లు మరియు రోగి ఫీడ్‌బ్యాక్ కనిపిస్తాయి.",
+    "appointmentsTitle": "అపాయింట్మెంట్లు",
+    "loadingAppointments": "అపాయింట్మెంట్లు లోడ్ అవుతున్నాయి...",
+    "noAppointments": "ఇంకా అపాయింట్మెంట్లు లేవు.",
+    "emergencyBadge": "ఎమర్జెన్సీ",
+    "patientLabel": "రోగి:",
+    "patientNotAvailable": "రోగి వివరాలు అందుబాటులో లేవు",
+    "phoneLabel": "ఫోన్:",
+    "problemLabel": "సమస్య:",
+    "openMeeting": "మీటింగ్ లింక్ ఓపెన్ చేయండి",
+    "feedbackTitle": "రోగి ఫీడ్‌బ్యాక్",
+    "loadingFeedback": "ఫీడ్‌బ్యాక్ లోడ్ అవుతోంది...",
+    "noFeedback": "ఇంకా ఫీడ్‌బ్యాక్ లేదు.",
+    "ratingLabel": "రేటింగ్:",
+    "appointmentLabel": "అపాయింట్మెంట్:",
+    "noComment": "కామెంట్ లేదు"
+  },
+  "login": {
+    "title": "లాగిన్",
+    "email": "ఈమెయిల్",
+    "password": "పాస్‌వర్డ్",
+    "submit": "లాగిన్",
+    "loggingIn": "లాగిన్ అవుతోంది...",
+    "failed": "లాగిన్ విఫలమైంది",
+    "registerPatient": "రోగిగా రిజిస్టర్ అవ్వండి"
+  },
+  "registerPatient": {
+    "title": "రోగి రిజిస్ట్రేషన్",
+    "subtitle": "కొనసాగించడానికి ఖాతా సృష్టించండి",
+    "email": "ఈమెయిల్",
+    "password": "పాస్‌వర్డ్",
+    "emailPlaceholder": "patient@example.com",
+    "required": "దయచేసి ఈమెయిల్ మరియు పాస్‌వర్డ్ ఇవ్వండి",
+    "creating": "ఖాతా సృష్టించబడుతోంది...",
+    "submit": "ఖాతా సృష్టించండి",
+    "failed": "రోగి రిజిస్ట్రేషన్ విఫలమైంది"
+  },
+  "registerDoctor": {
+    "title": "డాక్టర్ రిజిస్ట్రేషన్",
+    "subtitle": "రోగులు బుక్ చేసే ముందు మీ ఖాతా అడ్మిన్ ద్వారా వెరిఫై కావాలి.",
+    "required": "దయచేసి అవసరమైన ఫీల్డ్స్ అన్నీ నింపండి",
+    "failed": "డాక్టర్ రిజిస్ట్రేషన్ విఫలమైంది",
+    "fullName": "పూర్తి పేరు",
+    "namePlaceholder": "డా. జాన్ డో",
+    "email": "ఈమెయిల్",
+    "emailPlaceholder": "doctor@example.com",
+    "password": "పాస్‌వర్డ్",
+    "specialization": "ప్రత్యేకత",
+    "specializationPlaceholder": "కార్డియాలజిస్ట్, డెర్మటాలజిస్ట్...",
+    "calLink": "Cal.com ఈవెంట్ లింక్",
+    "calLinkPlaceholder": "https://cal.com/yourname/30min",
+    "calLinkHelp": "మీ Cal.com బుకింగ్ లింక్ ఉపయోగించండి.",
+    "registering": "రిజిస్టర్ అవుతోంది...",
+    "submit": "డాక్టర్ రిజిస్టర్ చేయండి"
+  }
 }

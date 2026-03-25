@@ -17,6 +17,13 @@ type FeedbackFormState = {
   comment: string;
 };
 
+function toAbsoluteUrl(url: string): string {
+  if (!url) return "#";
+  return url.startsWith("http://") || url.startsWith("https://")
+    ? url
+    : `https://${url}`;
+}
+
 export default function MyAppointments() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,11 +125,11 @@ export default function MyAppointments() {
             <p className="font-medium">Slot: {appt.slot}</p>
 
             {appt.meetingUrl ? (
-              <a href={appt.meetingUrl} target="_blank" rel="noopener noreferrer">
+              <a href={toAbsoluteUrl(appt.meetingUrl)} target="_blank" rel="noopener noreferrer">
                 <Button>🎥 Join Call</Button>
               </a>
             ) : appt.doctor?.calLink ? (
-              <a href={appt.doctor.calLink} target="_blank" rel="noopener noreferrer">
+              <a href={toAbsoluteUrl(appt.doctor.calLink)} target="_blank" rel="noopener noreferrer">
                 <Button>🎥 Join Call</Button>
               </a>
             ) : (

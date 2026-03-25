@@ -3,3 +3,10 @@ node_modules
 .env
 
 /src/generated/prisma
+
+# local smoke-test artifacts
+*.cookie
+app*.out
+app*.err
+admin_login.json
+create_medicine.json

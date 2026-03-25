@@ -56,6 +56,10 @@ model Appointment {
   id         String      @id @default(auto()) @map("_id") @db.ObjectId
   slot       String
   meetingUrl String?
+  isEmergency Boolean    @default(false)
+  emergencyContactEmail String?
+  emergencyContactPhone String?
+  emergencyProblem String?
   createdAt  DateTime    @default(now())
 
   doctor     Doctor      @relation(fields: [doctorId], references: [id])

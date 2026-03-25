@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   apiBookAppointment,
   apiEmergencyBooking,
@@ -12,11 +11,25 @@ import {
 import type { DoctorPublic } from "@/types";
 
 const AVATAR_COLORS = [
-  { bg: "bg-teal-100 text-teal-800", ring: "ring-teal-200" },
-  { bg: "bg-orange-100 text-orange-800", ring: "ring-orange-200" },
-  { bg: "bg-violet-100 text-violet-800", ring: "ring-violet-200" },
-  { bg: "bg-blue-100 text-blue-800", ring: "ring-blue-200" },
+  { bg: "bg-teal-100 text-teal-800" },
+  { bg: "bg-orange-100 text-orange-800" },
+  { bg: "bg-violet-100 text-violet-800" },
+  { bg: "bg-blue-100 text-blue-800" },
 ];
+
+type EmergencyFormState = {
+  email: string;
+  phone: string;
+  problem: string;
+  doctorId: string;
+};
+
+const initialEmergencyForm: EmergencyFormState = {
+  email: "",
+  phone: "",
+  problem: "",
+  doctorId: "",
+};
 
 function getInitials(name: string) {
   return name
@@ -40,6 +53,13 @@ function formatSlotLabel(slot: string): string {
   }
 
   return `Emergency consultation at ${date.toLocaleString()}`;
+}
+
+function toAbsoluteUrl(url: string): string {
+  if (!url) return "#";
+  return url.startsWith("http://") || url.startsWith("https://")
+    ? url
+    : `https://${url}`;
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -70,6 +90,10 @@ export default function Home() {
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState<Record<string, boolean>>({});
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
+  const [showEmergencyForm, setShowEmergencyForm] = useState(false);
+  const [emergencyError, setEmergencyError] = useState("");
+  const [emergencyForm, setEmergencyForm] =
+    useState<EmergencyFormState>(initialEmergencyForm);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -77,6 +101,10 @@ export default function Home() {
         setLoadingDoctors(true);
         const res = await apiGetVerifiedDoctors();
         setDoctors(res);
+        setEmergencyForm((prev) => ({
+          ...prev,
+          doctorId: prev.doctorId || res[0]?.id || "",
+        }));
       } catch (err) {
         console.error("Failed to load doctors", err);
       } finally {
@@ -113,20 +141,30 @@ export default function Home() {
   };
 
   const handleEmergencyBooking = async () => {
+    const payload = {
+      email: emergencyForm.email.trim(),
+      phone: emergencyForm.phone.trim(),
+      problem: emergencyForm.problem.trim(),
+      doctorId: emergencyForm.doctorId,
+    };
+
+    if (!payload.email || !payload.phone || !payload.problem || !payload.doctorId) {
+      setEmergencyError(t("home.emergency.validation"));
+      return;
+    }
+
     try {
       setBookingSlot("emergency");
+      setEmergencyError("");
 
-      const res = await apiEmergencyBooking();
+      const res = await apiEmergencyBooking(payload);
       setJoinLink(res.meetingUrl ?? null);
       setConfirmedDoctor(res.doctor);
       setConfirmedSlot(res.slot);
+      setShowEmergencyForm(false);
+      setEmergencyForm((prev) => ({ ...initialEmergencyForm, doctorId: prev.doctorId }));
     } catch (err) {
-      if (isAxiosError(err) && err.response?.status === 401) {
-        navigate("/login");
-        return;
-      }
-
-      alert(getErrorMessage(err, "Emergency booking failed"));
+      setEmergencyError(getErrorMessage(err, t("home.emergency.bookingFailed")));
     } finally {
       setBookingSlot(null);
     }
@@ -174,44 +212,118 @@ export default function Home() {
       style={{ background: "var(--color-background-tertiary, #f5f4f0)" }}
     >
       <div className="mx-auto max-w-3xl">
-        <div className="mb-10 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1
-              className="text-6xl leading-tight text-green-500"
-              style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-            >
-              Find your{" "}
-              <em className="not-italic" style={{ color: "#1D9E75" }}>
-                doctor,
-              </em>
-              <br />
-              book in seconds.
-            </h1>
-            <p className="mt-2 text-sm font-light text-gray-500">
-              Verified specialists - Instant video consultation
-            </p>
-          </div>
-          <LanguageSwitcher />
+        <div className="mb-10">
+          <h1
+            className="text-6xl leading-tight text-green-500"
+            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          >
+            {t("home.title.line1")}{" "}
+            <em className="not-italic" style={{ color: "#1D9E75" }}>
+              {t("home.title.highlight")}
+            </em>
+            <br />
+            {t("home.title.line2")}
+          </h1>
+          <p className="mt-2 text-sm font-light text-gray-500">
+            {t("home.subtitle")}
+          </p>
         </div>
 
         <button
-          onClick={handleEmergencyBooking}
-          disabled={bookingSlot === "emergency"}
-          className="mb-6 w-full rounded-2xl bg-red-500 py-4 text-lg font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70"
+          onClick={() => setShowEmergencyForm((prev) => !prev)}
+          className="mb-4 w-full rounded-2xl bg-red-500 py-4 text-lg font-semibold text-white transition hover:bg-red-600"
         >
-          {bookingSlot === "emergency" ? "Connecting..." : "Get Immediate Doctor"}
+          {showEmergencyForm
+            ? t("home.emergency.hideForm")
+            : t("home.emergency.openForm")}
         </button>
 
+        {showEmergencyForm && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-white p-5">
+            <h3 className="text-lg font-semibold text-zinc-900">
+              {t("home.emergency.formTitle")}
+            </h3>
+            <p className="mt-1 text-sm text-zinc-500">
+              {t("home.emergency.formSubtitle")}
+            </p>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <input
+                type="email"
+                placeholder={t("home.emergency.email")}
+                value={emergencyForm.email}
+                onChange={(e) =>
+                  setEmergencyForm((prev) => ({ ...prev, email: e.target.value }))
+                }
+                className="rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-[#1D9E75]"
+              />
+
+              <input
+                type="text"
+                placeholder={t("home.emergency.phone")}
+                value={emergencyForm.phone}
+                onChange={(e) =>
+                  setEmergencyForm((prev) => ({ ...prev, phone: e.target.value }))
+                }
+                className="rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-[#1D9E75]"
+              />
+
+              <select
+                value={emergencyForm.doctorId}
+                onChange={(e) =>
+                  setEmergencyForm((prev) => ({ ...prev, doctorId: e.target.value }))
+                }
+                className="rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-[#1D9E75] sm:col-span-2"
+              >
+                {doctors.length === 0 && (
+                  <option value="">{t("home.emergency.noDoctors")}</option>
+                )}
+                {doctors.map((doctor) => (
+                  <option key={doctor.id} value={doctor.id}>
+                    {doctor.name} - {doctor.specialization}
+                  </option>
+                ))}
+              </select>
+
+              <textarea
+                rows={4}
+                placeholder={t("home.emergency.problem")}
+                value={emergencyForm.problem}
+                onChange={(e) =>
+                  setEmergencyForm((prev) => ({ ...prev, problem: e.target.value }))
+                }
+                className="rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-[#1D9E75] sm:col-span-2"
+              />
+            </div>
+
+            {emergencyError && (
+              <p className="mt-3 text-sm text-red-600">{emergencyError}</p>
+            )}
+
+            <button
+              onClick={handleEmergencyBooking}
+              disabled={bookingSlot === "emergency" || doctors.length === 0}
+              className="mt-4 rounded-xl bg-[#1D9E75] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0F6E56] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {bookingSlot === "emergency"
+                ? t("home.emergency.booking")
+                : t("home.emergency.bookNow")}
+            </button>
+          </div>
+        )}
+
         <p className="mb-4 text-xs font-medium uppercase tracking-widest text-gray-400">
-          Available doctors
+          {t("home.availableDoctors")}
         </p>
 
         {loadingDoctors ? (
           <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Spinner /> Loading doctors...
+            <Spinner /> {t("home.loadingDoctors")}
           </div>
         ) : doctors.length === 0 ? (
-          <p className="py-16 text-center text-sm text-gray-400">No doctors found.</p>
+          <p className="py-16 text-center text-sm text-gray-400">
+            {t("home.noDoctors")}
+          </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {doctors.map((doctor, index) => {
@@ -232,7 +344,7 @@ export default function Home() {
                   <div className="p-5">
                     <div className="mb-4 flex items-center gap-3">
                       <div
-                        className={`flex h-13 w-13 items-center justify-center rounded-xl text-base font-medium ${color.bg}`}
+                        className={`flex items-center justify-center rounded-xl text-base font-medium ${color.bg}`}
                         style={{ width: 52, height: 52, flexShrink: 0 }}
                       >
                         {getInitials(doctor.name)}
@@ -248,7 +360,7 @@ export default function Home() {
                     <div className="mb-4 flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-green-500" />
                       <span className="text-sm text-gray-400">
-                        Available slots today
+                        {t("home.availableSlots")}
                       </span>
                     </div>
 
@@ -260,18 +372,18 @@ export default function Home() {
                           : "border border-gray-200 text-gray-700 hover:border-[#1D9E75] hover:text-[#1D9E75]"
                       }`}
                     >
-                      {isExpanded ? "Hide slots" : "View available slots"}
+                      {isExpanded ? t("home.hideSlots") : t("viewSlots")}
                     </button>
 
                     {isExpanded && (
                       <div className="mt-4 border-t border-gray-100 pt-4">
                         <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">
-                          Pick a time
+                          {t("home.pickTime")}
                         </p>
 
                         {isLoadingSlots ? (
                           <div className="flex items-center gap-2 text-sm text-gray-400">
-                            <Spinner /> Loading slots...
+                            <Spinner /> {t("home.loadingSlots")}
                           </div>
                         ) : doctorSlots.length === 0 ? (
                           <p className="text-sm text-gray-400">{t("noSlots")}</p>
@@ -288,7 +400,7 @@ export default function Home() {
                                     : "border-gray-200 text-gray-700 hover:border-[#1D9E75] hover:bg-[#1D9E75] hover:text-white"
                                 }`}
                               >
-                                {bookingSlot === slot ? "Booking..." : slot}
+                                {bookingSlot === slot ? t("home.booking") : slot}
                               </button>
                             ))}
                           </div>
@@ -326,24 +438,24 @@ export default function Home() {
                 className="text-lg text-gray-900"
                 style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
               >
-                Appointment confirmed
+                {t("appointmentConfirmed")}
               </h3>
             </div>
 
             <p className="mb-4 text-sm leading-relaxed text-gray-500">
-              Your video consultation with{" "}
+              {t("home.confirmationPrefix")}{" "}
               <strong className="font-medium text-gray-700">
                 {confirmedDoctor.name}
               </strong>{" "}
-              is booked for{" "}
+              {t("home.confirmationMid")}{" "}
               <strong className="font-medium text-gray-700">
                 {formatSlotLabel(confirmedSlot)}
               </strong>
-              . A confirmation has been sent to your email.
+              .
             </p>
 
             <a
-              href={joinLink}
+              href={toAbsoluteUrl(joinLink)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl bg-[#1D9E75] px-5 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[#0F6E56]"

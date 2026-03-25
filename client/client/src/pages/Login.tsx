@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { apiLogin } from "@/services/auth.api";
 import { useAuth } from "@/auth/useAuth";
+import { useTranslation } from "react-i18next";
 
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { refresh } = useAuth();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,10 +23,13 @@ export function Login() {
     try {
       await apiLogin(email, password);
       await refresh();
-      navigate("/dashboard", { replace: true });
+      const redirectPath =
+        (location.state as { from?: { pathname?: string } } | null)?.from
+          ?.pathname ?? "/dashboard";
+      navigate(redirectPath, { replace: true });
     } catch (error) {
       console.log(error);
-      setMsg("Login failed");
+      setMsg(t("login.failed"));
     } finally {
       setLoading(false);
     }
@@ -31,7 +37,7 @@ export function Login() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
-      <h2 className="mb-6 text-2xl font-semibold">Login</h2>
+      <h2 className="mb-6 text-2xl font-semibold">{t("login.title")}</h2>
 
       {msg ? <p className="mb-4 text-sm text-red-500">{msg}</p> : null}
 
@@ -39,7 +45,7 @@ export function Login() {
         <input
           className="w-full rounded border p-2"
           type="email"
-          placeholder="Email"
+          placeholder={t("login.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -47,7 +53,7 @@ export function Login() {
         <input
           className="w-full rounded border p-2"
           type="password"
-          placeholder="Password"
+          placeholder={t("login.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -57,13 +63,13 @@ export function Login() {
           disabled={loading}
           className="w-full rounded bg-black p-2 text-white"
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? t("login.loggingIn") : t("login.submit")}
         </button>
       </form>
 
       <div className="mt-4 text-sm">
         <Link to="/register/patient" className="text-blue-600 underline">
-          Register as Patient
+          {t("login.registerPatient")}
         </Link>
       </div>
     </div>

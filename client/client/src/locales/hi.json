@@ -1,8 +1,124 @@
 {
   "title": "डॉक्टर अपॉइंटमेंट बुक करें",
-  "chooseDoctor": "डॉक्टर चुनें और परामर्श शेड्यूल करें",
+  "chooseDoctor": "डॉक्टर चुनें और अपनी कंसल्टेशन शेड्यूल करें",
   "viewSlots": "उपलब्ध स्लॉट देखें",
   "noSlots": "कोई स्लॉट उपलब्ध नहीं",
-  "appointmentConfirmed": "अपॉइंटमेंट सफल",
-  "joinCall": "वीडियो कॉल जॉइन करें"
+  "appointmentConfirmed": "अपॉइंटमेंट कन्फर्म हुआ",
+  "joinCall": "वीडियो कॉल जॉइन करें",
+  "joinInstruction": "आपकी कंसल्टेशन शेड्यूल हो गई है। समय पर वीडियो कॉल जॉइन करें।",
+  "authenticating": "यूज़र ऑथेंटिकेट किया जा रहा है...",
+  "authNotReady": "ऑथेंटिकेशन तैयार नहीं है",
+  "appointmentBooked": "अपॉइंटमेंट बुक हो गया!",
+  "bookingFailed": "बुकिंग असफल रही",
+  "language": {
+    "hi": "हिंदी",
+    "te": "तेलुगु"
+  },
+  "roles": {
+    "ADMIN": "एडमिन",
+    "DOCTOR": "डॉक्टर",
+    "PATIENT": "मरीज़"
+  },
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "medicalRecords": "मेडिकल रिकॉर्ड्स",
+    "appointments": "अपॉइंटमेंट्स",
+    "medicines": "दवाइयाँ",
+    "cart": "कार्ट",
+    "orders": "ऑर्डर्स",
+    "aiChat": "एआई चैट",
+    "login": "लॉगिन",
+    "patientRegister": "मरीज़ रजिस्टर",
+    "doctorRegister": "डॉक्टर रजिस्टर",
+    "signOut": "साइन आउट"
+  },
+  "home": {
+    "title": {
+      "line1": "अपना",
+      "highlight": "डॉक्टर ढूँढें,",
+      "line2": "सेकंड्स में बुक करें।"
+    },
+    "subtitle": "वेरिफाइड स्पेशलिस्ट्स - तुरंत वीडियो कंसल्टेशन",
+    "availableDoctors": "उपलब्ध डॉक्टर",
+    "loadingDoctors": "डॉक्टर लोड हो रहे हैं...",
+    "noDoctors": "कोई डॉक्टर नहीं मिला।",
+    "availableSlots": "आज के उपलब्ध स्लॉट",
+    "hideSlots": "स्लॉट छुपाएँ",
+    "pickTime": "समय चुनें",
+    "loadingSlots": "स्लॉट लोड हो रहे हैं...",
+    "booking": "बुक हो रहा है...",
+    "confirmationPrefix": "आपकी वीडियो कंसल्टेशन",
+    "confirmationMid": "के लिए बुक हो गई है",
+    "emergency": {
+      "openForm": "बिना लॉगिन इमरजेंसी बुकिंग",
+      "hideForm": "इमरजेंसी फॉर्म छुपाएँ",
+      "formTitle": "इमरजेंसी डॉक्टर बुक करें",
+      "formSubtitle": "जानकारी भरें और तुरंत मीटिंग लिंक पाएं।",
+      "email": "ईमेल",
+      "phone": "फोन नंबर",
+      "problem": "अपनी समस्या लिखें",
+      "noDoctors": "कोई डॉक्टर उपलब्ध नहीं",
+      "bookNow": "इमरजेंसी मीट बुक करें",
+      "booking": "इमरजेंसी बुक हो रही है...",
+      "validation": "कृपया ईमेल, फोन, समस्या और डॉक्टर चुनें।",
+      "bookingFailed": "इमरजेंसी बुकिंग असफल रही"
+    }
+  },
+  "doctor": {
+    "dashboardTitle": "डॉक्टर डैशबोर्ड",
+    "dashboardSubtitle": "यहाँ आपके अपॉइंटमेंट और मरीजों का फीडबैक दिखेगा।",
+    "appointmentsTitle": "अपॉइंटमेंट्स",
+    "loadingAppointments": "अपॉइंटमेंट लोड हो रहे हैं...",
+    "noAppointments": "अभी कोई अपॉइंटमेंट नहीं है।",
+    "emergencyBadge": "इमरजेंसी",
+    "patientLabel": "मरीज़:",
+    "patientNotAvailable": "मरीज़ जानकारी उपलब्ध नहीं",
+    "phoneLabel": "फोन:",
+    "problemLabel": "समस्या:",
+    "openMeeting": "मीटिंग लिंक खोलें",
+    "feedbackTitle": "मरीज़ फीडबैक",
+    "loadingFeedback": "फीडबैक लोड हो रहा है...",
+    "noFeedback": "अभी कोई फीडबैक नहीं है।",
+    "ratingLabel": "रेटिंग:",
+    "appointmentLabel": "अपॉइंटमेंट:",
+    "noComment": "कोई कमेंट नहीं"
+  },
+  "login": {
+    "title": "लॉगिन",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "submit": "लॉगिन",
+    "loggingIn": "लॉगिन हो रहा है...",
+    "failed": "लॉगिन असफल",
+    "registerPatient": "मरीज़ के रूप में रजिस्टर करें"
+  },
+  "registerPatient": {
+    "title": "मरीज़ रजिस्ट्रेशन",
+    "subtitle": "जारी रखने के लिए अकाउंट बनाएँ",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "emailPlaceholder": "patient@example.com",
+    "required": "कृपया ईमेल और पासवर्ड दर्ज करें",
+    "creating": "अकाउंट बनाया जा रहा है...",
+    "submit": "अकाउंट बनाएँ",
+    "failed": "मरीज़ रजिस्ट्रेशन असफल"
+  },
+  "registerDoctor": {
+    "title": "डॉक्टर रजिस्ट्रेशन",
+    "subtitle": "मरीज़ बुकिंग से पहले आपका अकाउंट एडमिन द्वारा वेरिफाई होना चाहिए।",
+    "required": "कृपया सभी जरूरी फ़ील्ड भरें",
+    "failed": "डॉक्टर रजिस्ट्रेशन असफल",
+    "fullName": "पूरा नाम",
+    "namePlaceholder": "डॉ. जॉन डो",
+    "email": "ईमेल",
+    "emailPlaceholder": "doctor@example.com",
+    "password": "पासवर्ड",
+    "specialization": "विशेषज्ञता",
+    "specializationPlaceholder": "कार्डियोलॉजिस्ट, डर्मेटोलॉजिस्ट...",
+    "calLink": "Cal.com इवेंट लिंक",
+    "calLinkPlaceholder": "https://cal.com/yourname/30min",
+    "calLinkHelp": "अपना Cal.com इवेंट बुकिंग लिंक उपयोग करें।",
+    "registering": "रजिस्टर हो रहा है...",
+    "submit": "डॉक्टर रजिस्टर करें"
+  }
 }

@@ -4,9 +4,14 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
+    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate",
+    "predev": "npm run prisma:generate",
+    "prebuild": "npm run prisma:generate",
+    "prestart": "npm run prisma:generate",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "seed:admin": "tsx prisma/seed.ts"
   },
   "dependencies": {

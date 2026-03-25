@@ -1,36 +1,38 @@
 import { useAuth } from "@/auth/useAuth";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface NavLinkItem {
   to: string;
-  label: string;
+  labelKey: string;
 }
 
 const PATIENT_LINKS: NavLinkItem[] = [
-  { to: "/patient", label: "Dashboard" },
-  { to: "/medical-records", label: "Medical records" },
-  { to: "/my-appointments", label: "Appointments" },
-  { to: "/medicines", label: "Medicines" },
-  { to: "/cart", label: "Cart" },
-  { to: "/orders", label: "Orders" },
-  { to: "/ai-chat", label: "AI chat" },
+  { to: "/patient", labelKey: "nav.dashboard" },
+  { to: "/medical-records", labelKey: "nav.medicalRecords" },
+  { to: "/my-appointments", labelKey: "nav.appointments" },
+  { to: "/medicines", labelKey: "nav.medicines" },
+  { to: "/cart", labelKey: "nav.cart" },
+  { to: "/orders", labelKey: "nav.orders" },
+  { to: "/ai-chat", labelKey: "nav.aiChat" },
 ];
 
 const DOCTOR_LINKS: NavLinkItem[] = [
-  { to: "/doctor", label: "Dashboard" },
-  { to: "/medical-records", label: "Medical records" },
+  { to: "/doctor", labelKey: "nav.dashboard" },
+  { to: "/medical-records", labelKey: "nav.medicalRecords" },
 ];
 
 const ADMIN_LINKS: NavLinkItem[] = [
-  { to: "/admin", label: "Dashboard" },
-  { to: "/admin/medicines", label: "Medicines" },
-  { to: "/admin/orders", label: "Orders" },
+  { to: "/admin", labelKey: "nav.dashboard" },
+  { to: "/admin/medicines", labelKey: "nav.medicines" },
+  { to: "/admin/orders", labelKey: "nav.orders" },
 ];
 
 const GUEST_LINKS: NavLinkItem[] = [
-  { to: "/login", label: "Login" },
-  { to: "/register/patient", label: "Patient register" },
-  { to: "/register/doctor", label: "Doctor register" },
+  { to: "/login", labelKey: "nav.login" },
+  { to: "/register/patient", labelKey: "nav.patientRegister" },
+  { to: "/register/doctor", labelKey: "nav.doctorRegister" },
 ];
 
 const ROLE_LINKS: Record<string, NavLinkItem[]> = {
@@ -56,8 +58,9 @@ function getInitials(email: string) {
   return email.slice(0, 2).toUpperCase();
 }
 
-function NavItem({ to, label }: NavLinkItem) {
+function NavItem({ to, labelKey }: NavLinkItem) {
   const { pathname } = useLocation();
+  const { t } = useTranslation();
   const isActive = pathname === to || pathname.startsWith(to + "/");
   return (
     <Link
@@ -68,7 +71,7 @@ function NavItem({ to, label }: NavLinkItem) {
           : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
       }`}
     >
-      {label}
+      {t(labelKey)}
     </Link>
   );
 }
@@ -76,6 +79,7 @@ function NavItem({ to, label }: NavLinkItem) {
 export function Navbar() {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   if (loading) return null;
 
@@ -92,59 +96,57 @@ export function Navbar() {
 
   return (
     <nav className="border-b border-zinc-100 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 h-14">
-
-        {/* Left — brand + links */}
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
         <div className="flex items-center gap-1">
           <Link
             to={user ? "/dashboard" : "/"}
-            className="mr-3 font-serif italic text-[17px] text-zinc-900 tracking-tight"
-            style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
+            className="mr-3 font-serif italic tracking-tight text-zinc-900"
+            style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 17 }}
           >
             Health AI
           </Link>
 
           {links.map((link) => (
-            <NavItem key={link.to} to={link.to} label={link.label} />
+            <NavItem key={link.to} to={link.to} labelKey={link.labelKey} />
           ))}
         </div>
 
-        {/* Right — user info + logout */}
-        {user && (
-          <div className="flex items-center gap-3">
-            {/* Avatar + meta */}
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-xs font-medium ${avatarColor}`}
-              >
-                {getInitials(user.email)}
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-xs font-medium text-zinc-800">
-                  {user.email}
-                </span>
-                <span
-                  className={`mt-1 inline-block self-start rounded-full px-1.5 py-px text-[10px] font-medium ${
-                    ROLE_BADGE[user.role] ?? "bg-zinc-100 text-zinc-600"
-                  }`}
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          {user && (
+            <>
+              <div className="h-4 w-px bg-zinc-200" />
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-xs font-medium ${avatarColor}`}
                 >
-                  {user.role}
-                </span>
+                  {getInitials(user.email)}
+                </div>
+                <div className="flex flex-col leading-none">
+                  <span className="text-xs font-medium text-zinc-800">
+                    {user.email}
+                  </span>
+                  <span
+                    className={`mt-1 inline-block self-start rounded-full px-1.5 py-px text-[10px] font-medium ${
+                      ROLE_BADGE[user.role] ?? "bg-zinc-100 text-zinc-600"
+                    }`}
+                  >
+                    {t(`roles.${user.role}`)}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Divider */}
-            <div className="h-4 w-px bg-zinc-200" />
+              <div className="h-4 w-px bg-zinc-200" />
 
-            {/* Logout */}
-            <button
-              onClick={handleLogout}
-              className="rounded-lg border border-zinc-200 bg-transparent px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-800"
-            >
-              Sign out
-            </button>
-          </div>
-        )}
+              <button
+                onClick={handleLogout}
+                className="rounded-lg border border-zinc-200 bg-transparent px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-800"
+              >
+                {t("nav.signOut")}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   );

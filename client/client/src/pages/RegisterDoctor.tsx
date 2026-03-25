@@ -1,14 +1,13 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { apiRegisterDoctor } from "@/services/auth.api";
-// import { getErrorMessage } from "@/api/http";
-// import { apiRegisterDoctor } from "../api/auth";
-// import { getErrorMessage } from "../api/http";
 
 export function RegisterDoctor() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -21,7 +20,7 @@ export function RegisterDoctor() {
     e?.preventDefault();
 
     if (!email || !password || !name || !specialization) {
-      setMsg("Please fill all required fields");
+      setMsg(t("registerDoctor.required"));
       return;
     }
 
@@ -34,13 +33,13 @@ export function RegisterDoctor() {
         password,
         name,
         specialization,
-        calLink: calLink.trim() ? calLink.trim() : undefined
+        calLink: calLink.trim() ? calLink.trim() : undefined,
       });
 
       setMsg(res.message);
     } catch (err: unknown) {
-    //   setMsg(getErrorMessage(err));
-    console.log(err)
+      console.log(err);
+      setMsg(t("registerDoctor.failed"));
     } finally {
       setLoading(false);
     }
@@ -49,25 +48,21 @@ export function RegisterDoctor() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-md p-6 shadow-lg">
-
-        {/* Header */}
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-semibold tracking-tight">
-            Doctor Registration
+            {t("registerDoctor.title")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Your account must be verified by admin before patients can book.
+            {t("registerDoctor.subtitle")}
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={submit} className="space-y-4">
-
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">{t("registerDoctor.fullName")}</Label>
             <Input
               id="name"
-              placeholder="Dr. John Doe"
+              placeholder={t("registerDoctor.namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -75,11 +70,11 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("registerDoctor.email")}</Label>
             <Input
               id="email"
               type="email"
-              placeholder="doctor@example.com"
+              placeholder={t("registerDoctor.emailPlaceholder")}
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -88,11 +83,11 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("registerDoctor.password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -101,10 +96,10 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="specialization">Specialization</Label>
+            <Label htmlFor="specialization">{t("registerDoctor.specialization")}</Label>
             <Input
               id="specialization"
-              placeholder="Cardiologist, Dermatologist..."
+              placeholder={t("registerDoctor.specializationPlaceholder")}
               value={specialization}
               onChange={(e) => setSpecialization(e.target.value)}
               required
@@ -112,36 +107,28 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="calLink">Cal.com Event Link</Label>
+            <Label htmlFor="calLink">{t("registerDoctor.calLink")}</Label>
             <Input
               id="calLink"
-              placeholder="https://cal.com/yourname/30min"
+              placeholder={t("registerDoctor.calLinkPlaceholder")}
               value={calLink}
               onChange={(e) => setCalLink(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Use your Cal.com event booking link (not dashboard link).
+              {t("registerDoctor.calLinkHelp")}
             </p>
           </div>
 
-          {/* Message */}
           {msg && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
               {msg}
             </div>
           )}
 
-          {/* Button */}
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? "Registering..." : "Register Doctor"}
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? t("registerDoctor.registering") : t("registerDoctor.submit")}
           </Button>
-
         </form>
-
       </Card>
     </div>
   );

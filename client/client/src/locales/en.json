@@ -9,5 +9,116 @@
   "authenticating": "Authenticating user...",
   "authNotReady": "Authentication not ready",
   "appointmentBooked": "Appointment booked!",
-  "bookingFailed": "Booking failed"
+  "bookingFailed": "Booking failed",
+  "language": {
+    "hi": "Hindi",
+    "te": "Telugu"
+  },
+  "roles": {
+    "ADMIN": "Admin",
+    "DOCTOR": "Doctor",
+    "PATIENT": "Patient"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "medicalRecords": "Medical records",
+    "appointments": "Appointments",
+    "medicines": "Medicines",
+    "cart": "Cart",
+    "orders": "Orders",
+    "aiChat": "AI chat",
+    "login": "Login",
+    "patientRegister": "Patient register",
+    "doctorRegister": "Doctor register",
+    "signOut": "Sign out"
+  },
+  "home": {
+    "title": {
+      "line1": "Find your",
+      "highlight": "doctor,",
+      "line2": "book in seconds."
+    },
+    "subtitle": "Verified specialists - Instant video consultation",
+    "availableDoctors": "Available doctors",
+    "loadingDoctors": "Loading doctors...",
+    "noDoctors": "No doctors found.",
+    "availableSlots": "Available slots today",
+    "hideSlots": "Hide slots",
+    "pickTime": "Pick a time",
+    "loadingSlots": "Loading slots...",
+    "booking": "Booking...",
+    "confirmationPrefix": "Your video consultation with",
+    "confirmationMid": "is booked for",
+    "emergency": {
+      "openForm": "Emergency Booking Without Login",
+      "hideForm": "Hide Emergency Form",
+      "formTitle": "Book Emergency Doctor",
+      "formSubtitle": "Fill details and instantly receive the meeting link.",
+      "email": "Email",
+      "phone": "Phone number",
+      "problem": "Describe your problem",
+      "noDoctors": "No doctors available",
+      "bookNow": "Book Emergency Meet",
+      "booking": "Booking emergency...",
+      "validation": "Please fill email, phone, problem and doctor.",
+      "bookingFailed": "Emergency booking failed"
+    }
+  },
+  "doctor": {
+    "dashboardTitle": "Doctor Dashboard",
+    "dashboardSubtitle": "Your appointments and patient feedback are shown here.",
+    "appointmentsTitle": "Appointments",
+    "loadingAppointments": "Loading appointments...",
+    "noAppointments": "No appointments yet.",
+    "emergencyBadge": "EMERGENCY",
+    "patientLabel": "Patient:",
+    "patientNotAvailable": "Patient details not available",
+    "phoneLabel": "Phone:",
+    "problemLabel": "Problem:",
+    "openMeeting": "Open meeting link",
+    "feedbackTitle": "Patient Feedback",
+    "loadingFeedback": "Loading feedback...",
+    "noFeedback": "No feedback yet.",
+    "ratingLabel": "Rating:",
+    "appointmentLabel": "Appointment:",
+    "noComment": "No comment"
+  },
+  "login": {
+    "title": "Login",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Login",
+    "loggingIn": "Logging in...",
+    "failed": "Login failed",
+    "registerPatient": "Register as Patient"
+  },
+  "registerPatient": {
+    "title": "Patient Registration",
+    "subtitle": "Create an account to continue",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "patient@example.com",
+    "required": "Please enter email and password",
+    "creating": "Creating account...",
+    "submit": "Create Account",
+    "failed": "Patient registration failed"
+  },
+  "registerDoctor": {
+    "title": "Doctor Registration",
+    "subtitle": "Your account must be verified by admin before patients can book.",
+    "required": "Please fill all required fields",
+    "failed": "Doctor registration failed",
+    "fullName": "Full Name",
+    "namePlaceholder": "Dr. John Doe",
+    "email": "Email",
+    "emailPlaceholder": "doctor@example.com",
+    "password": "Password",
+    "specialization": "Specialization",
+    "specializationPlaceholder": "Cardiologist, Dermatologist...",
+    "calLink": "Cal.com Event Link",
+    "calLinkPlaceholder": "https://cal.com/yourname/30min",
+    "calLinkHelp": "Use your Cal.com event booking link (not dashboard link).",
+    "registering": "Registering...",
+    "submit": "Register Doctor"
+  }
 }

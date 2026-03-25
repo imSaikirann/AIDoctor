@@ -4,8 +4,17 @@ import { apiDoctorAppointments } from "@/services/appointment";
 import { apiDoctorFeedbacks } from "@/services/feedback";
 import { Card } from "@/components/ui/card";
 import { Toast } from "@/components/ui/toast";
+import { useTranslation } from "react-i18next";
+
+function toAbsoluteUrl(url: string): string {
+  if (!url) return "#";
+  return url.startsWith("http://") || url.startsWith("https://")
+    ? url
+    : `https://${url}`;
+}
 
 export function DoctorDashboard() {
+  const { t } = useTranslation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [msg, setMsg] = useState("");
@@ -38,34 +47,53 @@ export function DoctorDashboard() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <div>
-        <h2 className="text-xl font-semibold">Doctor Dashboard</h2>
-        <p className="text-sm text-zinc-600">Your appointments and patient feedback are shown here.</p>
+        <h2 className="text-xl font-semibold">{t("doctor.dashboardTitle")}</h2>
+        <p className="text-sm text-zinc-600">{t("doctor.dashboardSubtitle")}</p>
         <Toast message={msg} />
       </div>
 
       <Card>
-        <h3 className="text-lg font-semibold">Appointments</h3>
+        <h3 className="text-lg font-semibold">{t("doctor.appointmentsTitle")}</h3>
 
         <div className="mt-3 space-y-3">
           {loading ? (
-            <div className="text-sm text-zinc-600">Loading appointments...</div>
+            <div className="text-sm text-zinc-600">{t("doctor.loadingAppointments")}</div>
           ) : appointments.length === 0 ? (
-            <div className="text-sm text-zinc-600">No appointments yet.</div>
+            <div className="text-sm text-zinc-600">{t("doctor.noAppointments")}</div>
           ) : (
             appointments.map((appt) => (
               <div key={appt.id} className="border-b pb-3 last:border-0">
-                <div className="font-medium">{appt.slot}</div>
-                <div className="text-sm text-zinc-700">
-                  {appt.user ? `Patient: ${appt.user.email}` : "Patient details not available"}
+                <div className="flex items-center gap-2 font-medium">
+                  <span>{appt.slot}</span>
+                  {appt.isEmergency && (
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                      {t("doctor.emergencyBadge")}
+                    </span>
+                  )}
                 </div>
+                <div className="text-sm text-zinc-700">
+                  {appt.user
+                    ? `${t("doctor.patientLabel")} ${appt.user.email}`
+                    : t("doctor.patientNotAvailable")}
+                </div>
+                {appt.isEmergency && (
+                  <div className="mt-1 text-sm text-zinc-700">
+                    {appt.emergencyContactPhone && (
+                      <div>{t("doctor.phoneLabel")} {appt.emergencyContactPhone}</div>
+                    )}
+                    {appt.emergencyProblem && (
+                      <div>{t("doctor.problemLabel")} {appt.emergencyProblem}</div>
+                    )}
+                  </div>
+                )}
                 {appt.meetingUrl ? (
                   <a
                     className="text-sm text-blue-600 underline"
-                    href={appt.meetingUrl}
+                    href={toAbsoluteUrl(appt.meetingUrl)}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Open video link
+                    {t("doctor.openMeeting")}
                   </a>
                 ) : null}
               </div>
@@ -75,25 +103,25 @@ export function DoctorDashboard() {
       </Card>
 
       <Card>
-        <h3 className="text-lg font-semibold">Patient Feedback</h3>
+        <h3 className="text-lg font-semibold">{t("doctor.feedbackTitle")}</h3>
 
         <div className="mt-3 space-y-3">
           {loading ? (
-            <div className="text-sm text-zinc-600">Loading feedback...</div>
+            <div className="text-sm text-zinc-600">{t("doctor.loadingFeedback")}</div>
           ) : feedbacks.length === 0 ? (
-            <div className="text-sm text-zinc-600">No feedback yet.</div>
+            <div className="text-sm text-zinc-600">{t("doctor.noFeedback")}</div>
           ) : (
             feedbacks.map((feedback) => (
               <div key={feedback.id} className="border-b pb-3 last:border-0">
-                <div className="font-medium">Rating: {feedback.rating}/5</div>
+                <div className="font-medium">{t("doctor.ratingLabel")} {feedback.rating}/5</div>
                 <div className="text-sm text-zinc-700">
-                  Patient: {feedback.patient?.email}
+                  {t("doctor.patientLabel")} {feedback.patient?.email}
                 </div>
                 <div className="text-sm text-zinc-700">
-                  Appointment: {feedback.appointment?.slot}
+                  {t("doctor.appointmentLabel")} {feedback.appointment?.slot}
                 </div>
                 <div className="text-sm text-zinc-600">
-                  {feedback.comment || "No comment"}
+                  {feedback.comment || t("doctor.noComment")}
                 </div>
               </div>
             ))

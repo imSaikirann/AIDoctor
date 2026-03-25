@@ -3,6 +3,13 @@ import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 // import type { PlaceOrderBody } from "../types/order.types.js";
 const router = Router();
+class OrderFlowError extends Error {
+    statusCode;
+    constructor(statusCode, message) {
+        super(message);
+        this.statusCode = statusCode;
+    }
+}
 router.use(requireAuth, requireRole("PATIENT"));
 router.post("/place", async (req, res) => {
     try {
@@ -42,10 +49,10 @@ router.post("/place", async (req, res) => {
             let total = 0;
             for (const item of cart.items) {
                 if (!item.medicine.isActive) {
-                    throw new Error(`Medicine "${item.medicine.name}" is not available`);
+                    throw new OrderFlowError(400, `Medicine "${item.medicine.name}" is not available`);
                 }
                 if (item.medicine.stock < item.quantity) {
-                    throw new Error(`Insufficient stock for "${item.medicine.name}"`);
+                    throw new OrderFlowError(400, `Insufficient stock for "${item.medicine.name}"`);
                 }
                 total += item.quantity * item.medicine.price;
             }
@@ -105,6 +112,10 @@ router.post("/place", async (req, res) => {
     }
     catch (error) {
         console.log("PLACE ORDER ERROR:", error);
+        if (error instanceof OrderFlowError) {
+            res.status(error.statusCode).json({ message: error.message });
+            return;
+        }
         const message = error instanceof Error ? error.message : "Failed to place order";
         res.status(500).json({ message });
     }

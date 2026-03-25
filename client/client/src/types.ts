@@ -32,6 +32,10 @@ export type Appointment = {
   doctorId: string;
   userId: string;
   slot: string;
+  isEmergency?: boolean;
+  emergencyContactEmail?: string | null;
+  emergencyContactPhone?: string | null;
+  emergencyProblem?: string | null;
   status?: string;
   meetingUrl?: string;
   createdAt?: string;
@@ -50,6 +54,13 @@ export type EmergencyBookingResponse = {
   slot: string;
   meetingUrl?: string;
   appointment: Appointment;
+};
+
+export type EmergencyBookingPayload = {
+  email: string;
+  phone: string;
+  problem: string;
+  doctorId: string;
 };
 
 
