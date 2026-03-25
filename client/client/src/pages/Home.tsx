@@ -1,21 +1,15 @@
 import { useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useNavigate } from "react-router-dom";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
-
   apiBookAppointment,
   apiEmergencyBooking,
   apiGetSlots,
   apiGetVerifiedDoctors,
 } from "@/services/appointment";
-
-interface Doctor {
-  id: string;
-  name: string;
-  specialization: string;
-  calLink?: string | null;
-}
+import type { DoctorPublic } from "@/types";
 
 const AVATAR_COLORS = [
   { bg: "bg-teal-100 text-teal-800", ring: "ring-teal-200" },
@@ -34,15 +28,45 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
+function formatSlotLabel(slot: string): string {
+  if (!slot.startsWith("Emergency ")) {
+    return slot;
+  }
+
+  const isoPart = slot.slice("Emergency ".length);
+  const date = new Date(isoPart);
+  if (Number.isNaN(date.getTime())) {
+    return slot;
+  }
+
+  return `Emergency consultation at ${date.toLocaleString()}`;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message ?? fallback;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 export default function Home() {
   const { t } = useTranslation();
-  const navigate = useNavigate()
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const navigate = useNavigate();
+
+  const [doctors, setDoctors] = useState<DoctorPublic[]>([]);
   const [expandedDoctor, setExpandedDoctor] = useState<string | null>(null);
   const [slots, setSlots] = useState<Record<string, string[]>>({});
   const [joinLink, setJoinLink] = useState<string | null>(null);
   const [confirmedSlot, setConfirmedSlot] = useState<string | null>(null);
-  const [confirmedDoctor, setConfirmedDoctor] = useState<Doctor | null>(null);
+  const [confirmedDoctor, setConfirmedDoctor] = useState<DoctorPublic | null>(
+    null
+  );
+
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState<Record<string, boolean>>({});
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
@@ -52,91 +76,97 @@ export default function Home() {
       try {
         setLoadingDoctors(true);
         const res = await apiGetVerifiedDoctors();
-        setDoctors(res as Doctor[]);
+        setDoctors(res);
       } catch (err) {
         console.error("Failed to load doctors", err);
       } finally {
         setLoadingDoctors(false);
       }
     };
+
     fetchDoctors();
   }, []);
 
-  const toggleDoctor = async (doc: Doctor) => {
-    if (expandedDoctor === doc.id) {
+  const toggleDoctor = async (doctor: DoctorPublic) => {
+    if (expandedDoctor === doctor.id) {
       setExpandedDoctor(null);
       return;
     }
-    setExpandedDoctor(doc.id);
+
+    setExpandedDoctor(doctor.id);
     setJoinLink(null);
     setConfirmedSlot(null);
 
-    if (!slots[doc.id]) {
-      try {
-        setLoadingSlots((prev) => ({ ...prev, [doc.id]: true }));
-        const res = await apiGetSlots(doc.id);
-        setSlots((prev) => ({ ...prev, [doc.id]: res.availableSlots }));
-      } catch (err) {
-        console.error("Failed to load slots", err);
-      } finally {
-        setLoadingSlots((prev) => ({ ...prev, [doc.id]: false }));
-      }
+    if (slots[doctor.id]) {
+      return;
+    }
+
+    try {
+      setLoadingSlots((prev) => ({ ...prev, [doctor.id]: true }));
+      const res = await apiGetSlots(doctor.id);
+      setSlots((prev) => ({ ...prev, [doctor.id]: res.availableSlots }));
+    } catch (err) {
+      console.error("Failed to load slots", err);
+    } finally {
+      setLoadingSlots((prev) => ({ ...prev, [doctor.id]: false }));
     }
   };
 
   const handleEmergencyBooking = async () => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    navigate("/login");
-    return;
-  }
-
-  try {
-    setBookingSlot("emergency");
-
-    const res = await apiEmergencyBooking(); // new API
-
-    setJoinLink(res.meetingUrl);
-    setConfirmedDoctor(res.doctor);
-    setConfirmedSlot(res.slot);
-
-  } catch (err) {
-    alert("Emergency booking failed");
-    console.log(err)
-  } finally {
-    setBookingSlot(null);
-  }
-};
-  const handleBook = async (slot: string) => {
-    if (!expandedDoctor) return;
-    const token = localStorage.getItem("token");
-
-  if (!token) {
-    navigate("/login");
-    return;
-  }
-
     try {
-      setBookingSlot(slot);
-      const appointment = await apiBookAppointment({
-        doctorId: expandedDoctor,
-        slot,
-      });
-      setJoinLink(appointment.meetingUrl ?? null);
-      setConfirmedSlot(slot);
-      setConfirmedDoctor(doctors.find((d) => d.id === expandedDoctor) ?? null);
+      setBookingSlot("emergency");
 
-      const updated = await apiGetSlots(expandedDoctor);
-      setSlots((prev) => ({ ...prev, [expandedDoctor]: updated.availableSlots }));
+      const res = await apiEmergencyBooking();
+      setJoinLink(res.meetingUrl ?? null);
+      setConfirmedDoctor(res.doctor);
+      setConfirmedSlot(res.slot);
     } catch (err) {
-      alert(err instanceof Error ? err.message : t("bookingFailed"));
+      if (isAxiosError(err) && err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
+      alert(getErrorMessage(err, "Emergency booking failed"));
     } finally {
       setBookingSlot(null);
     }
   };
 
-  console.log(doctors)
+  const handleBook = async (slot: string) => {
+    if (!expandedDoctor) {
+      return;
+    }
+
+    try {
+      setBookingSlot(slot);
+
+      const appointment = await apiBookAppointment({
+        doctorId: expandedDoctor,
+        slot,
+      });
+
+      setJoinLink(appointment.meetingUrl ?? null);
+      setConfirmedSlot(slot);
+      setConfirmedDoctor(
+        doctors.find((doctor) => doctor.id === expandedDoctor) ?? null
+      );
+
+      const updated = await apiGetSlots(expandedDoctor);
+      setSlots((prev) => ({
+        ...prev,
+        [expandedDoctor]: updated.availableSlots,
+      }));
+    } catch (err) {
+      if (isAxiosError(err) && err.response?.status === 401) {
+        navigate("/login");
+        return;
+      }
+
+      alert(getErrorMessage(err, t("bookingFailed")));
+    } finally {
+      setBookingSlot(null);
+    }
+  };
 
   return (
     <div
@@ -144,7 +174,6 @@ export default function Home() {
       style={{ background: "var(--color-background-tertiary, #f5f4f0)" }}
     >
       <div className="mx-auto max-w-3xl">
-        {/* Header */}
         <div className="mb-10 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1
@@ -159,43 +188,41 @@ export default function Home() {
               book in seconds.
             </h1>
             <p className="mt-2 text-sm font-light text-gray-500">
-              Verified specialists · Instant video consultation
+              Verified specialists - Instant video consultation
             </p>
           </div>
           <LanguageSwitcher />
         </div>
 
         <button
-  onClick={handleEmergencyBooking}
-  className="w-full mb-6 bg-red-500 text-white py-4 rounded-2xl font-semibold text-lg hover:bg-red-600 transition"
->
-  🚨 Get Immediate Doctor
-</button>
-        {/* Section label */}
+          onClick={handleEmergencyBooking}
+          disabled={bookingSlot === "emergency"}
+          className="mb-6 w-full rounded-2xl bg-red-500 py-4 text-lg font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {bookingSlot === "emergency" ? "Connecting..." : "Get Immediate Doctor"}
+        </button>
+
         <p className="mb-4 text-xs font-medium uppercase tracking-widest text-gray-400">
           Available doctors
         </p>
 
-        {/* Doctors grid */}
         {loadingDoctors ? (
           <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Spinner /> Loading doctors…
+            <Spinner /> Loading doctors...
           </div>
         ) : doctors.length === 0 ? (
-          <p className="text-center py-16 text-sm text-gray-400">
-            No doctors found.
-          </p>
+          <p className="py-16 text-center text-sm text-gray-400">No doctors found.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
-            {doctors.map((doc, i) => {
-              const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
-              const isExpanded = expandedDoctor === doc.id;
-              const docSlots = slots[doc.id] ?? [];
-              const isLoadingSlots = loadingSlots[doc.id];
+            {doctors.map((doctor, index) => {
+              const color = AVATAR_COLORS[index % AVATAR_COLORS.length];
+              const isExpanded = expandedDoctor === doctor.id;
+              const doctorSlots = slots[doctor.id] ?? [];
+              const isLoadingSlots = loadingSlots[doctor.id];
 
               return (
                 <div
-                  key={doc.id}
+                  key={doctor.id}
                   className={`rounded-2xl border bg-white transition-all duration-200 ${
                     isExpanded
                       ? "border-[#1D9E75] shadow-sm"
@@ -203,23 +230,21 @@ export default function Home() {
                   }`}
                 >
                   <div className="p-5">
-                    {/* Doctor info */}
                     <div className="mb-4 flex items-center gap-3">
                       <div
                         className={`flex h-13 w-13 items-center justify-center rounded-xl text-base font-medium ${color.bg}`}
                         style={{ width: 52, height: 52, flexShrink: 0 }}
                       >
-                        {getInitials(doc.name)}
+                        {getInitials(doctor.name)}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{doc.name}</p>
-                        <span className="mt-0.5 inline-block rounded-full bg-gray-50 px-2.5 py-0.5 text-xs text-gray-500 border border-gray-100">
-                          {doc.specialization}
+                        <p className="font-medium text-gray-900">{doctor.name}</p>
+                        <span className="mt-0.5 inline-block rounded-full border border-gray-100 bg-gray-50 px-2.5 py-0.5 text-xs text-gray-500">
+                          {doctor.specialization}
                         </span>
                       </div>
                     </div>
 
-                    {/* Availability pill */}
                     <div className="mb-4 flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-green-500" />
                       <span className="text-sm text-gray-400">
@@ -227,44 +252,43 @@ export default function Home() {
                       </span>
                     </div>
 
-                    {/* Toggle button */}
                     <button
-                      onClick={() => toggleDoctor(doc)}
-                      className={`w-full rounded-xl py-2.5 text-sm font-medium transition-all ${
+                      onClick={() => toggleDoctor(doctor)}
+                      className={`w-full rounded-xl bg-transparent py-2.5 text-sm font-medium transition-all ${
                         isExpanded
                           ? "bg-[#1D9E75] text-white"
-                          : "border border-gray-200 text-gray-700 hover:border-[#1D9E75] hover:text-[#1D9E75] bg-transparent"
+                          : "border border-gray-200 text-gray-700 hover:border-[#1D9E75] hover:text-[#1D9E75]"
                       }`}
                     >
                       {isExpanded ? "Hide slots" : "View available slots"}
                     </button>
 
-                    {/* Slots */}
                     {isExpanded && (
                       <div className="mt-4 border-t border-gray-100 pt-4">
                         <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">
                           Pick a time
                         </p>
+
                         {isLoadingSlots ? (
                           <div className="flex items-center gap-2 text-sm text-gray-400">
-                            <Spinner /> Loading slots…
+                            <Spinner /> Loading slots...
                           </div>
-                        ) : docSlots.length === 0 ? (
+                        ) : doctorSlots.length === 0 ? (
                           <p className="text-sm text-gray-400">{t("noSlots")}</p>
                         ) : (
                           <div className="flex flex-wrap gap-2">
-                            {docSlots.map((slot) => (
+                            {doctorSlots.map((slot) => (
                               <button
                                 key={slot}
-                                disabled={!!bookingSlot}
+                                disabled={Boolean(bookingSlot)}
                                 onClick={() => handleBook(slot)}
-                                className={`rounded-full border px-4 py-1.5 text-sm transition-all ${
+                                className={`rounded-full border px-4 py-1.5 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                                   bookingSlot === slot
                                     ? "border-[#1D9E75] bg-[#1D9E75] text-white"
                                     : "border-gray-200 text-gray-700 hover:border-[#1D9E75] hover:bg-[#1D9E75] hover:text-white"
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                }`}
                               >
-                                {bookingSlot === slot ? "Booking…" : slot}
+                                {bookingSlot === slot ? "Booking..." : slot}
                               </button>
                             ))}
                           </div>
@@ -278,9 +302,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Confirmation banner */}
         {joinLink && confirmedDoctor && confirmedSlot && (
-          <div className="mt-6 rounded-2xl border-2 border-[#9FE1CB] bg-white p-6 animate-in slide-in-from-bottom-3 duration-300">
+          <div className="animate-in slide-in-from-bottom-3 mt-6 rounded-2xl border-2 border-[#9FE1CB] bg-white p-6 duration-300">
             <div className="mb-3 flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E1F5EE]">
                 <svg
@@ -306,15 +329,19 @@ export default function Home() {
                 Appointment confirmed
               </h3>
             </div>
+
             <p className="mb-4 text-sm leading-relaxed text-gray-500">
               Your video consultation with{" "}
               <strong className="font-medium text-gray-700">
                 {confirmedDoctor.name}
               </strong>{" "}
               is booked for{" "}
-              <strong className="font-medium text-gray-700">{confirmedSlot}</strong>
+              <strong className="font-medium text-gray-700">
+                {formatSlotLabel(confirmedSlot)}
+              </strong>
               . A confirmation has been sent to your email.
             </p>
+
             <a
               href={joinLink}
               target="_blank"
@@ -328,7 +355,15 @@ export default function Home() {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <rect x="1" y="3" width="9" height="10" rx="2" stroke="white" strokeWidth="1.5" />
+                <rect
+                  x="1"
+                  y="3"
+                  width="9"
+                  height="10"
+                  rx="2"
+                  stroke="white"
+                  strokeWidth="1.5"
+                />
                 <path
                   d="M10 6.5L15 4V12L10 9.5V6.5Z"
                   stroke="white"

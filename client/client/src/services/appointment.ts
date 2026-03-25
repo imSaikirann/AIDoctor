@@ -1,5 +1,9 @@
 import { api } from "@/lib/axios";
-import type { DoctorPublic, Appointment } from "../types";
+import type {
+  DoctorPublic,
+  Appointment,
+  EmergencyBookingResponse,
+} from "../types";
 
 export async function apiGetVerifiedDoctors(): Promise<DoctorPublic[]> {
   const res = await api.get<DoctorPublic[]>("/appointments/doctors");
@@ -16,8 +20,8 @@ export async function apiGetSlots(
 }
 
 
-export async function apiEmergencyBooking(): Promise<DoctorPublic[]> {
-  const res = await api.get<DoctorPublic[]>("/appointment/emergency");
+export async function apiEmergencyBooking(): Promise<EmergencyBookingResponse> {
+  const res = await api.post<EmergencyBookingResponse>("/appointments/emergency");
   return res.data;
 }
 

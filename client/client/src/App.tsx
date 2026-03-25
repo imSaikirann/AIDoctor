@@ -19,6 +19,7 @@ import MyOrdersPage from "./pages/MyOrdersPage";
 import AdminMedicinesPage from "./pages/AdminMedicinesPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import Home from "./pages/Home";
+import MedicalRecordsPage from "./pages/MedicalRecordsPage";
 
 function RoleRedirect() {
   const { user, loading } = useAuth();
@@ -92,6 +93,15 @@ function App() {
             element={
               <RequireAuth role="DOCTOR">
                 <DoctorDashboard />
+              </RequireAuth>
+            }
+          />
+
+          <Route
+            path="/medical-records"
+            element={
+              <RequireAuth>
+                <MedicalRecordsPage />
               </RequireAuth>
             }
           />
