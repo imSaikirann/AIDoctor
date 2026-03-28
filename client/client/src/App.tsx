@@ -1,10 +1,10 @@
+﻿import { useTranslation } from "react-i18next";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 
 import MyAppointments from "./pages/MyAppointments";
 import ChatBot from "./pages/ChatBot";
 import { RequireAuth } from "./auth/RequireAuth";
-// import { PublicOnly } from "./auth/PublicOnly";
 import { useAuth } from "./auth/useAuth";
 import { Login } from "./pages/Login";
 import { RegisterPatient } from "./pages/RegisterPatient";
@@ -22,9 +22,10 @@ import Home from "./pages/Home";
 import MedicalRecordsPage from "./pages/MedicalRecordsPage";
 
 function RoleRedirect() {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading) return <div className="p-6">{t("common.loading")}</div>;
   if (!user) return <Navigate to="/login" replace />;
 
   if (user.role === "PATIENT") return <Navigate to="/patient" replace />;
@@ -161,13 +162,13 @@ function App() {
           />
 
           <Route
-  path="/admin/orders"
-  element={
-    <RequireAuth role="ADMIN">
-      <AdminOrdersPage />
-    </RequireAuth>
-  }
-/>
+            path="/admin/orders"
+            element={
+              <RequireAuth role="ADMIN">
+                <AdminOrdersPage />
+              </RequireAuth>
+            }
+          />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

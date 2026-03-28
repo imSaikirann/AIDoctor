@@ -1,7 +1,6 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-// import { apiRegisterPatient } from "../api/auth";
-// import { getErrorMessage } from "../api/http";
 import { useAuth } from "@/auth/useAuth";
 
 import { Card } from "../components/ui/card";
@@ -11,6 +10,7 @@ import { Button } from "../components/ui/button";
 import { apiRegisterPatient } from "@/services/auth.api";
 
 export function RegisterPatient() {
+  const { t } = useTranslation();
   const nav = useNavigate();
   const { refresh } = useAuth();
 
@@ -23,7 +23,7 @@ export function RegisterPatient() {
     e?.preventDefault();
 
     if (!email || !password) {
-      setMsg("Please enter email and password");
+      setMsg(t("auth.enterEmailPassword"));
       return;
     }
 
@@ -35,8 +35,8 @@ export function RegisterPatient() {
       await refresh();
       nav("/");
     } catch (err: unknown) {
-    //   setMsg(getErrorMessage(err));
-    console.log(err)
+      console.log(err);
+      setMsg(t("common.error"));
     } finally {
       setLoading(false);
     }
@@ -45,22 +45,18 @@ export function RegisterPatient() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-md p-6 shadow-lg">
-
-        {/* Header */}
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-semibold tracking-tight">
-            Patient Registration
+            {t("auth.patientRegistration")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Create an account to continue
+            {t("auth.continueAccount")}
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={submit} className="space-y-4">
-
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("common.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -74,11 +70,11 @@ export function RegisterPatient() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("common.password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -86,24 +82,16 @@ export function RegisterPatient() {
             />
           </div>
 
-          {/* Error */}
           {msg && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
               {msg}
             </div>
           )}
 
-          {/* Button */}
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? "Creating account..." : "Create Account"}
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? t("auth.creatingAccount") : t("auth.createAccount")}
           </Button>
-
         </form>
-
       </Card>
     </div>
   );

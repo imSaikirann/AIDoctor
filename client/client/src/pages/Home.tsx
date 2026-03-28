@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +28,7 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function formatSlotLabel(slot: string): string {
+function formatSlotLabel(slot: string, language: string, emergencyLabel: string): string {
   if (!slot.startsWith("Emergency ")) {
     return slot;
   }
@@ -39,7 +39,7 @@ function formatSlotLabel(slot: string): string {
     return slot;
   }
 
-  return `Emergency consultation at ${date.toLocaleString()}`;
+  return emergencyLabel.replace("{{date}}", date.toLocaleString(language));
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -55,7 +55,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [doctors, setDoctors] = useState<DoctorPublic[]>([]);
@@ -63,9 +63,7 @@ export default function Home() {
   const [slots, setSlots] = useState<Record<string, string[]>>({});
   const [joinLink, setJoinLink] = useState<string | null>(null);
   const [confirmedSlot, setConfirmedSlot] = useState<string | null>(null);
-  const [confirmedDoctor, setConfirmedDoctor] = useState<DoctorPublic | null>(
-    null
-  );
+  const [confirmedDoctor, setConfirmedDoctor] = useState<DoctorPublic | null>(null);
 
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState<Record<string, boolean>>({});
@@ -84,7 +82,7 @@ export default function Home() {
       }
     };
 
-    fetchDoctors();
+    void fetchDoctors();
   }, []);
 
   const toggleDoctor = async (doctor: DoctorPublic) => {
@@ -126,7 +124,7 @@ export default function Home() {
         return;
       }
 
-      alert(getErrorMessage(err, "Emergency booking failed"));
+      alert(getErrorMessage(err, t("home.emergencyBookingFailed")));
     } finally {
       setBookingSlot(null);
     }
@@ -162,7 +160,7 @@ export default function Home() {
         return;
       }
 
-      alert(getErrorMessage(err, t("bookingFailed")));
+      alert(getErrorMessage(err, t("home.bookingFailed")));
     } finally {
       setBookingSlot(null);
     }
@@ -180,15 +178,15 @@ export default function Home() {
               className="text-6xl leading-tight text-green-500"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              Find your{" "}
+              {t("home.heroTitlePrefix")}{" "}
               <em className="not-italic" style={{ color: "#1D9E75" }}>
-                doctor,
+                {t("home.heroTitleAccent")}
               </em>
               <br />
-              book in seconds.
+              {t("home.heroTitleSuffix")}
             </h1>
             <p className="mt-2 text-sm font-light text-gray-500">
-              Verified specialists - Instant video consultation
+              {t("home.heroSubtitle")}
             </p>
           </div>
           <LanguageSwitcher />
@@ -199,19 +197,21 @@ export default function Home() {
           disabled={bookingSlot === "emergency"}
           className="mb-6 w-full rounded-2xl bg-red-500 py-4 text-lg font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {bookingSlot === "emergency" ? "Connecting..." : "Get Immediate Doctor"}
+          {bookingSlot === "emergency"
+            ? t("home.emergencyConnecting")
+            : t("home.getImmediateDoctor")}
         </button>
 
         <p className="mb-4 text-xs font-medium uppercase tracking-widest text-gray-400">
-          Available doctors
+          {t("home.availableDoctors")}
         </p>
 
         {loadingDoctors ? (
           <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Spinner /> Loading doctors...
+            <Spinner /> {t("home.loadingDoctors")}
           </div>
         ) : doctors.length === 0 ? (
-          <p className="py-16 text-center text-sm text-gray-400">No doctors found.</p>
+          <p className="py-16 text-center text-sm text-gray-400">{t("home.noDoctors")}</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {doctors.map((doctor, index) => {
@@ -248,47 +248,47 @@ export default function Home() {
                     <div className="mb-4 flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-green-500" />
                       <span className="text-sm text-gray-400">
-                        Available slots today
+                        {t("home.availableSlotsToday")}
                       </span>
                     </div>
 
                     <button
-                      onClick={() => toggleDoctor(doctor)}
+                      onClick={() => void toggleDoctor(doctor)}
                       className={`w-full rounded-xl bg-transparent py-2.5 text-sm font-medium transition-all ${
                         isExpanded
                           ? "bg-[#1D9E75] text-white"
                           : "border border-gray-200 text-gray-700 hover:border-[#1D9E75] hover:text-[#1D9E75]"
                       }`}
                     >
-                      {isExpanded ? "Hide slots" : "View available slots"}
+                      {isExpanded ? t("home.hideSlots") : t("home.viewSlots")}
                     </button>
 
                     {isExpanded && (
                       <div className="mt-4 border-t border-gray-100 pt-4">
                         <p className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">
-                          Pick a time
+                          {t("home.pickTime")}
                         </p>
 
                         {isLoadingSlots ? (
                           <div className="flex items-center gap-2 text-sm text-gray-400">
-                            <Spinner /> Loading slots...
+                            <Spinner /> {t("home.loadingSlots")}
                           </div>
                         ) : doctorSlots.length === 0 ? (
-                          <p className="text-sm text-gray-400">{t("noSlots")}</p>
+                          <p className="text-sm text-gray-400">{t("home.noSlots")}</p>
                         ) : (
                           <div className="flex flex-wrap gap-2">
                             {doctorSlots.map((slot) => (
                               <button
                                 key={slot}
                                 disabled={Boolean(bookingSlot)}
-                                onClick={() => handleBook(slot)}
+                                onClick={() => void handleBook(slot)}
                                 className={`rounded-full border px-4 py-1.5 text-sm transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                                   bookingSlot === slot
                                     ? "border-[#1D9E75] bg-[#1D9E75] text-white"
                                     : "border-gray-200 text-gray-700 hover:border-[#1D9E75] hover:bg-[#1D9E75] hover:text-white"
                                 }`}
                               >
-                                {bookingSlot === slot ? "Booking..." : slot}
+                                {bookingSlot === slot ? t("home.booking") : slot}
                               </button>
                             ))}
                           </div>
@@ -326,20 +326,19 @@ export default function Home() {
                 className="text-lg text-gray-900"
                 style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
               >
-                Appointment confirmed
+                {t("home.appointmentConfirmed")}
               </h3>
             </div>
 
             <p className="mb-4 text-sm leading-relaxed text-gray-500">
-              Your video consultation with{" "}
-              <strong className="font-medium text-gray-700">
-                {confirmedDoctor.name}
-              </strong>{" "}
-              is booked for{" "}
-              <strong className="font-medium text-gray-700">
-                {formatSlotLabel(confirmedSlot)}
-              </strong>
-              . A confirmation has been sent to your email.
+              {t("home.appointmentBookedWith", {
+                doctor: confirmedDoctor.name,
+                slot: formatSlotLabel(
+                  confirmedSlot,
+                  i18n.resolvedLanguage ?? i18n.language,
+                  t("home.emergencyConsultationAt", { date: "{{date}}" })
+                ),
+              })}
             </p>
 
             <a
@@ -371,7 +370,7 @@ export default function Home() {
                   strokeLinejoin="round"
                 />
               </svg>
-              {t("joinCall")}
+              {t("home.joinCall")}
             </a>
           </div>
         )}

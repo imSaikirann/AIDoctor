@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Appointment, Feedback } from "@/types";
 import { apiDoctorAppointments } from "@/services/appointment";
 import { apiDoctorFeedbacks } from "@/services/feedback";
@@ -6,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Toast } from "@/components/ui/toast";
 
 export function DoctorDashboard() {
+  const { t } = useTranslation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [msg, setMsg] = useState("");
@@ -25,38 +27,40 @@ export function DoctorDashboard() {
       setFeedbacks(feedbackData);
     } catch (error) {
       console.log(error);
-      setMsg("Failed to load doctor dashboard.");
+      setMsg(t("doctorDashboard.failedLoad"));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <div>
-        <h2 className="text-xl font-semibold">Doctor Dashboard</h2>
-        <p className="text-sm text-zinc-600">Your appointments and patient feedback are shown here.</p>
+        <h2 className="text-xl font-semibold">{t("doctorDashboard.title")}</h2>
+        <p className="text-sm text-zinc-600">{t("doctorDashboard.subtitle")}</p>
         <Toast message={msg} />
       </div>
 
       <Card>
-        <h3 className="text-lg font-semibold">Appointments</h3>
+        <h3 className="text-lg font-semibold">{t("doctorDashboard.appointments")}</h3>
 
         <div className="mt-3 space-y-3">
           {loading ? (
-            <div className="text-sm text-zinc-600">Loading appointments...</div>
+            <div className="text-sm text-zinc-600">{t("doctorDashboard.loadingAppointments")}</div>
           ) : appointments.length === 0 ? (
-            <div className="text-sm text-zinc-600">No appointments yet.</div>
+            <div className="text-sm text-zinc-600">{t("doctorDashboard.noAppointments")}</div>
           ) : (
             appointments.map((appt) => (
               <div key={appt.id} className="border-b pb-3 last:border-0">
                 <div className="font-medium">{appt.slot}</div>
                 <div className="text-sm text-zinc-700">
-                  {appt.user ? `Patient: ${appt.user.email}` : "Patient details not available"}
+                  {appt.user
+                    ? t("doctorDashboard.patient", { email: appt.user.email })
+                    : t("patientDashboard.patientDetailsUnavailable")}
                 </div>
                 {appt.meetingUrl ? (
                   <a
@@ -65,7 +69,7 @@ export function DoctorDashboard() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Open video link
+                    {t("doctorDashboard.openVideoLink")}
                   </a>
                 ) : null}
               </div>
@@ -75,25 +79,27 @@ export function DoctorDashboard() {
       </Card>
 
       <Card>
-        <h3 className="text-lg font-semibold">Patient Feedback</h3>
+        <h3 className="text-lg font-semibold">{t("doctorDashboard.patientFeedback")}</h3>
 
         <div className="mt-3 space-y-3">
           {loading ? (
-            <div className="text-sm text-zinc-600">Loading feedback...</div>
+            <div className="text-sm text-zinc-600">{t("doctorDashboard.loadingFeedback")}</div>
           ) : feedbacks.length === 0 ? (
-            <div className="text-sm text-zinc-600">No feedback yet.</div>
+            <div className="text-sm text-zinc-600">{t("doctorDashboard.noFeedback")}</div>
           ) : (
             feedbacks.map((feedback) => (
               <div key={feedback.id} className="border-b pb-3 last:border-0">
-                <div className="font-medium">Rating: {feedback.rating}/5</div>
-                <div className="text-sm text-zinc-700">
-                  Patient: {feedback.patient?.email}
+                <div className="font-medium">
+                  {t("doctorDashboard.rating", { rating: feedback.rating })}
                 </div>
                 <div className="text-sm text-zinc-700">
-                  Appointment: {feedback.appointment?.slot}
+                  {t("doctorDashboard.patient", { email: feedback.patient?.email ?? "-" })}
+                </div>
+                <div className="text-sm text-zinc-700">
+                  {t("doctorDashboard.appointment", { slot: feedback.appointment?.slot ?? "-" })}
                 </div>
                 <div className="text-sm text-zinc-600">
-                  {feedback.comment || "No comment"}
+                  {feedback.comment || t("common.noComment")}
                 </div>
               </div>
             ))

@@ -1,9 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import { apiLogin } from "@/services/auth.api";
 import { useAuth } from "@/auth/useAuth";
 
 export function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { refresh } = useAuth();
 
@@ -23,7 +25,7 @@ export function Login() {
       navigate("/dashboard", { replace: true });
     } catch (error) {
       console.log(error);
-      setMsg("Login failed");
+      setMsg(t("auth.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -31,7 +33,7 @@ export function Login() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-10">
-      <h2 className="mb-6 text-2xl font-semibold">Login</h2>
+      <h2 className="mb-6 text-2xl font-semibold">{t("auth.loginTitle")}</h2>
 
       {msg ? <p className="mb-4 text-sm text-red-500">{msg}</p> : null}
 
@@ -39,7 +41,7 @@ export function Login() {
         <input
           className="w-full rounded border p-2"
           type="email"
-          placeholder="Email"
+          placeholder={t("common.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -47,7 +49,7 @@ export function Login() {
         <input
           className="w-full rounded border p-2"
           type="password"
-          placeholder="Password"
+          placeholder={t("common.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -57,13 +59,13 @@ export function Login() {
           disabled={loading}
           className="w-full rounded bg-black p-2 text-white"
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? t("auth.loggingIn") : t("auth.loginAction")}
         </button>
       </form>
 
       <div className="mt-4 text-sm">
         <Link to="/register/patient" className="text-blue-600 underline">
-          Register as Patient
+          {t("auth.registerAsPatient")}
         </Link>
       </div>
     </div>

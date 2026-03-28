@@ -14,7 +14,7 @@ router.patch(
   "/verify/:id",
   async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     try {
-      const doctor = await prisma.doctor.update({
+      const doctor = await prisma.doctor.update({   
         where: { id: req.params.id },
         data: { verified: true },
       });
@@ -30,7 +30,7 @@ router.patch(
 // ALL USERS
 router.get("/users", async (_req: Request, res: Response): Promise<void> => {
   try {
-    const users = await prisma.user.findMany({
+    const users = await prisma.user.findMany({    
       select: {
         id: true,
         email: true,

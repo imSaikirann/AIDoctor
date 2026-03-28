@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { apiMyAppointments } from "@/services/appointment";
 import { apiCreateFeedback } from "@/services/feedback";
 import type { Appointment } from "@/types";
@@ -18,6 +19,7 @@ type FeedbackFormState = {
 };
 
 export default function MyAppointments() {
+  const { t } = useTranslation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,7 +36,7 @@ export default function MyAppointments() {
       const res = await apiMyAppointments();
       setAppointments(res);
     } catch (err) {
-      setError("Failed to load appointments");
+      setError(t("appointmentsPage.failedLoad"));
       console.log(err);
     } finally {
       setLoading(false);
@@ -42,7 +44,7 @@ export default function MyAppointments() {
   };
 
   useEffect(() => {
-    loadAppointments();
+    void loadAppointments();
   }, []);
 
   const handleFeedbackChange = (
@@ -64,7 +66,7 @@ export default function MyAppointments() {
     const current = feedbackForm[appointmentId];
 
     if (!current || !current.rating) {
-      setMsg("Please select a rating before submitting feedback.");
+      setMsg(t("appointmentsPage.ratingRequired"));
       return;
     }
 
@@ -78,18 +80,18 @@ export default function MyAppointments() {
         comment: current.comment,
       });
 
-      setMsg("Feedback submitted successfully.");
+      setMsg(t("appointmentsPage.feedbackSuccess"));
       await loadAppointments();
     } catch (err) {
       console.log(err);
-      setMsg("Failed to submit feedback.");
+      setMsg(t("appointmentsPage.feedbackFailed"));
     } finally {
       setSubmittingId(null);
     }
   };
 
   if (loading) {
-    return <div className="p-10 text-lg font-medium">Loading appointments...</div>;
+    return <div className="p-10 text-lg font-medium">{t("appointmentsPage.loading")}</div>;
   }
 
   if (error) {
@@ -98,51 +100,53 @@ export default function MyAppointments() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-10">
-      <h1 className="text-3xl font-bold">📅 My Appointments</h1>
+      <h1 className="text-3xl font-bold">{t("appointmentsPage.title")}</h1>
 
       {msg ? <p className="text-sm text-blue-600">{msg}</p> : null}
 
       {appointments.length === 0 && (
-        <p className="text-muted-foreground">No appointments yet</p>
+        <p className="text-muted-foreground">{t("appointmentsPage.noAppointments")}</p>
       )}
 
       {appointments.map((appt) => (
         <Card key={appt.id}>
           <CardHeader>
             <CardTitle>
-              {appt.doctor?.name} — {appt.doctor?.specialization}
+              {appt.doctor?.name} - {appt.doctor?.specialization}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <p className="font-medium">Slot: {appt.slot}</p>
+            <p className="font-medium">{t("appointmentsPage.slot", { slot: appt.slot })}</p>
 
             {appt.meetingUrl ? (
               <a href={appt.meetingUrl} target="_blank" rel="noopener noreferrer">
-                <Button>🎥 Join Call</Button>
+                <Button>{t("appointmentsPage.joinCall")}</Button>
               </a>
             ) : appt.doctor?.calLink ? (
               <a href={appt.doctor.calLink} target="_blank" rel="noopener noreferrer">
-                <Button>🎥 Join Call</Button>
+                <Button>{t("appointmentsPage.joinCall")}</Button>
               </a>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Meeting link will appear before appointment
+                {t("appointmentsPage.meetingLater")}
               </p>
             )}
 
             <div className="border-t pt-4">
               {appt.feedback ? (
                 <div className="space-y-2">
-                  <h3 className="font-semibold">Your Feedback</h3>
-                  <p className="text-sm">Rating: {appt.feedback.rating}/5</p>
+                  <h3 className="font-semibold">{t("appointmentsPage.yourFeedback")}</h3>
+                  <p className="text-sm">
+                    {t("appointmentsPage.rating", { rating: appt.feedback.rating })}
+                  </p>
                   <p className="text-sm text-zinc-600">
-                    {appt.feedback.comment || "No comment"}
+                    {appt.feedback.comment || t("common.noComment")}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <h3 className="font-semibold">Give Feedback</h3>
+                  <h3 className="font-semibold">{t("appointmentsPage.giveFeedback")}</h3>
 
                   <select
                     className="w-full rounded border p-2"
@@ -151,17 +155,17 @@ export default function MyAppointments() {
                       handleFeedbackChange(appt.id, "rating", Number(e.target.value))
                     }
                   >
-                    <option value="">Select rating</option>
-                    <option value="1">1 - Poor</option>
-                    <option value="2">2 - Fair</option>
-                    <option value="3">3 - Good</option>
-                    <option value="4">4 - Very Good</option>
-                    <option value="5">5 - Excellent</option>
+                    <option value="">{t("appointmentsPage.selectRating")}</option>
+                    <option value="1">{t("appointmentsPage.ratingPoor")}</option>
+                    <option value="2">{t("appointmentsPage.ratingFair")}</option>
+                    <option value="3">{t("appointmentsPage.ratingGood")}</option>
+                    <option value="4">{t("appointmentsPage.ratingVeryGood")}</option>
+                    <option value="5">{t("appointmentsPage.ratingExcellent")}</option>
                   </select>
 
                   <textarea
                     className="w-full rounded border p-2"
-                    placeholder="Write feedback"
+                    placeholder={t("appointmentsPage.writeFeedback")}
                     value={feedbackForm[appt.id]?.comment || ""}
                     onChange={(e) =>
                       handleFeedbackChange(appt.id, "comment", e.target.value)
@@ -169,10 +173,12 @@ export default function MyAppointments() {
                   />
 
                   <Button
-                    onClick={() => handleSubmitFeedback(appt.id)}
+                    onClick={() => void handleSubmitFeedback(appt.id)}
                     disabled={submittingId === appt.id}
                   >
-                    {submittingId === appt.id ? "Submitting..." : "Submit Feedback"}
+                    {submittingId === appt.id
+                      ? t("appointmentsPage.submitting")
+                      : t("appointmentsPage.submitFeedback")}
                   </Button>
                 </div>
               )}

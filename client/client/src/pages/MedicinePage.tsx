@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { apiAddToCart } from "@/services/cart";
 import { apiGetMedicines } from "@/services/medicine";
 import type { Medicine } from "@/types";
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/http";
 
 export default function MedicinesPage() {
+  const { t } = useTranslation();
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -56,27 +58,27 @@ export default function MedicinesPage() {
   };
 
   if (loading) {
-    return <div className="p-6">Loading medicines...</div>;
+    return <div className="p-6">{t("medicinesPage.loading")}</div>;
   }
 
   return (
     <div className="mx-auto max-w-6xl p-6">
-      <h1 className="mb-4 text-2xl font-bold">Medicines</h1>
+      <h1 className="mb-4 text-2xl font-bold">{t("medicinesPage.title")}</h1>
 
       <div className="mb-6 flex gap-3">
         <Input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search medicines..."
+          placeholder={t("medicinesPage.searchPlaceholder")}
         />
-        <Button onClick={() => void handleSearch()}>Search</Button>
+        <Button onClick={() => void handleSearch()}>{t("common.search")}</Button>
       </div>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
       {message && <p className="mb-4 text-sm text-green-600">{message}</p>}
 
       {medicines.length === 0 ? (
-        <p className="text-sm text-zinc-600">No medicines found.</p>
+        <p className="text-sm text-zinc-600">{t("medicinesPage.noMedicines")}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {medicines.map((medicine) => (
@@ -89,24 +91,26 @@ export default function MedicinesPage() {
                 />
               ) : (
                 <div className="mb-3 flex h-40 items-center justify-center rounded bg-zinc-100 text-sm text-zinc-500">
-                  No image
+                  {t("medicinesPage.noImage")}
                 </div>
               )}
 
               <h2 className="text-lg font-semibold">{medicine.name}</h2>
 
               <p className="mt-1 text-sm text-zinc-600">
-                {medicine.description || "No description"}
+                {medicine.description || t("medicinesPage.noDescription")}
               </p>
 
               <p className="mt-2 text-sm text-zinc-700">
-                Category: {medicine.category || "General"}
+                {t("medicinesPage.category", {
+                  value: medicine.category || t("medicinesPage.general"),
+                })}
               </p>
 
-              <p className="mt-1 text-sm font-medium">₹ {medicine.price}</p>
+              <p className="mt-1 text-sm font-medium">Rs. {medicine.price}</p>
 
               <p className="mt-1 text-sm text-zinc-700">
-                Stock: {medicine.stock}
+                {t("medicinesPage.stock", { count: medicine.stock })}
               </p>
 
               <Button
@@ -114,7 +118,7 @@ export default function MedicinesPage() {
                 disabled={medicine.stock <= 0 || addingId === medicine.id}
                 onClick={() => void handleAddToCart(medicine.id)}
               >
-                {addingId === medicine.id ? "Adding..." : "Add to Cart"}
+                {addingId === medicine.id ? t("medicinesPage.adding") : t("medicinesPage.addToCart")}
               </Button>
             </Card>
           ))}

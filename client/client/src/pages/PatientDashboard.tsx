@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { DoctorPublic, Appointment } from "../types";
 import {
   apiGetVerifiedDoctors,
@@ -6,8 +7,6 @@ import {
   apiBookAppointment,
   apiMyAppointments,
 } from "../services/appointment";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
   "bg-[#9FE1CB] text-[#085041]",
@@ -31,8 +30,6 @@ function toAbsoluteUrl(url: string): string {
   return url.startsWith("http") ? url : `https://${url}`;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 function Spinner({ className = "" }: { className?: string }) {
   return (
     <span
@@ -43,19 +40,21 @@ function Spinner({ className = "" }: { className?: string }) {
 }
 
 function StatusBadge({ status }: { status?: string }) {
+  const { t } = useTranslation();
   const map: Record<string, string> = {
     CONFIRMED: "bg-[#E1F5EE] text-[#085041]",
-    PENDING:   "bg-[#FAEEDA] text-[#633806]",
+    PENDING: "bg-[#FAEEDA] text-[#633806]",
     CANCELLED: "bg-[#FCEBEB] text-[#791F1F]",
   };
   const key = (status ?? "CONFIRMED").toUpperCase();
+
   return (
     <span
       className={`inline-block rounded-full px-2 py-px text-[10px] font-medium ${
         map[key] ?? "bg-zinc-100 text-zinc-600"
       }`}
     >
-      {key}
+      {t(`status.${key}`)}
     </span>
   );
 }
@@ -70,8 +69,8 @@ function Toast({
   if (!message) return null;
   const styles = {
     success: "bg-[#E1F5EE] text-[#085041] border-[#9FE1CB]",
-    error:   "bg-[#FCEBEB] text-[#791F1F] border-[#F7C1C1]",
-    info:    "bg-[#E6F1FB] text-[#0C447C] border-[#B5D4F4]",
+    error: "bg-[#FCEBEB] text-[#791F1F] border-[#F7C1C1]",
+    info: "bg-[#E6F1FB] text-[#0C447C] border-[#B5D4F4]",
   };
   return (
     <div className={`mt-3 rounded-xl border px-4 py-2.5 text-sm ${styles[type]}`}>
@@ -87,8 +86,6 @@ function EmptyState({ text }: { text: string }) {
     </div>
   );
 }
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
 
 function VideoIcon() {
   return (
@@ -108,8 +105,6 @@ function CalIcon() {
     </svg>
   );
 }
-
-// ─── Doctor Card ──────────────────────────────────────────────────────────────
 
 interface DoctorCardProps {
   doctor: DoctorPublic;
@@ -134,6 +129,7 @@ function DoctorCard({
   onViewSlots,
   onBook,
 }: DoctorCardProps) {
+  const { t } = useTranslation();
   const avatarClass = AVATAR_COLORS[index % AVATAR_COLORS.length];
   const calUrl = doctor.calLink ? toAbsoluteUrl(doctor.calLink) : null;
 
@@ -146,7 +142,6 @@ function DoctorCard({
       }`}
     >
       <div className="p-5">
-        {/* Doctor info */}
         <div className="mb-4 flex items-center gap-3">
           <div
             className={`flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-xl text-sm font-medium ${avatarClass}`}
@@ -160,14 +155,13 @@ function DoctorCard({
             </span>
           </div>
 
-          {/* Cal.com external link — top-right corner of card */}
           {calUrl && (
             <a
               href={calUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              title="Open booking page on Cal.com"
+              title={t("patientDashboard.openCal")}
               className="flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs text-zinc-500 transition-colors hover:border-[#1D9E75] hover:text-[#1D9E75]"
             >
               <CalIcon />
@@ -176,13 +170,11 @@ function DoctorCard({
           )}
         </div>
 
-        {/* Availability dot */}
         <div className="mb-4 flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-green-500" />
-          <span className="text-sm text-zinc-400">Available today</span>
+          <span className="text-sm text-zinc-400">{t("patientDashboard.availableToday")}</span>
         </div>
 
-        {/* Toggle slots button */}
         <button
           onClick={() => onViewSlots(doctor.id)}
           className={`w-full rounded-xl py-2.5 text-sm font-medium transition-all duration-150 ${
@@ -191,24 +183,22 @@ function DoctorCard({
               : "border border-zinc-200 bg-transparent text-zinc-700 hover:border-[#1D9E75] hover:text-[#1D9E75]"
           }`}
         >
-          {isExpanded ? "Hide slots" : "View available slots"}
+          {isExpanded ? t("patientDashboard.hideSlots") : t("patientDashboard.viewSlots")}
         </button>
 
-        {/* Slots panel */}
         {isExpanded && (
           <div className="mt-4 border-t border-zinc-100 pt-4">
             <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-400">
-              Pick a time
+              {t("patientDashboard.pickTime")}
             </p>
 
             {loadingSlots ? (
               <div className="flex items-center gap-2 text-sm text-zinc-400">
-                <Spinner /> Loading slots…
+                <Spinner /> {t("patientDashboard.loadingSlots")}
               </div>
             ) : slots.length === 0 ? (
               <div className="space-y-2">
-                <p className="text-sm text-zinc-400">No slots available.</p>
-                {/* Fallback to cal.com if no slots via API */}
+                <p className="text-sm text-zinc-400">{t("patientDashboard.noSlots")}</p>
                 {calUrl && (
                   <a
                     href={calUrl}
@@ -217,7 +207,7 @@ function DoctorCard({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-600 transition-colors hover:border-[#1D9E75] hover:text-[#1D9E75]"
                   >
                     <CalIcon />
-                    Book via Cal.com instead
+                    {t("patientDashboard.bookViaCal")}
                   </a>
                 )}
               </div>
@@ -239,7 +229,7 @@ function DoctorCard({
                       {isBookingThis ? (
                         <span className="flex items-center gap-1.5">
                           <Spinner className="border-white/40 border-t-white" />
-                          Booking…
+                          {t("home.booking")}
                         </span>
                       ) : (
                         slot
@@ -256,17 +246,10 @@ function DoctorCard({
   );
 }
 
-// ─── Appointment Row ──────────────────────────────────────────────────────────
-
 function AppointmentRow({ appointment }: { appointment: Appointment }) {
-  const initials = appointment.doctor
-    ? getInitials(appointment.doctor.name)
-    : "??";
-
-  // meetingUrl can be a cal.com link or a video call link — open either safely
-  const meetingUrl = appointment.meetingUrl
-    ? toAbsoluteUrl(appointment.meetingUrl)
-    : null;
+  const { t } = useTranslation();
+  const initials = appointment.doctor ? getInitials(appointment.doctor.name) : "??";
+  const meetingUrl = appointment.meetingUrl ? toAbsoluteUrl(appointment.meetingUrl) : null;
 
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-zinc-100 bg-white px-4 py-3 transition hover:border-zinc-200">
@@ -276,7 +259,7 @@ function AppointmentRow({ appointment }: { appointment: Appointment }) {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-zinc-900">
-            {appointment.doctor ? appointment.doctor.name : "Doctor unavailable"}
+            {appointment.doctor ? appointment.doctor.name : t("patientDashboard.doctorUnavailable")}
           </p>
           <p className="text-xs text-zinc-400">
             {appointment.doctor?.specialization ?? ""} · {appointment.slot}
@@ -295,7 +278,7 @@ function AppointmentRow({ appointment }: { appointment: Appointment }) {
             className="inline-flex items-center gap-1.5 rounded-lg bg-[#1D9E75] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#0F6E56]"
           >
             <VideoIcon />
-            Book a Video call
+            {t("patientDashboard.bookVideoCall")}
           </a>
         )}
       </div>
@@ -303,20 +286,16 @@ function AppointmentRow({ appointment }: { appointment: Appointment }) {
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
-
 export function PatientDashboard() {
+  const { t } = useTranslation();
   const [doctors, setDoctors] = useState<DoctorPublic[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(false);
-
   const [expandedDoctorId, setExpandedDoctorId] = useState<string | null>(null);
   const [slotCache, setSlotCache] = useState<Record<string, string[]>>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
-
   const [booking, setBooking] = useState(false);
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
-
   const [toast, setToast] = useState<{
     msg: string;
     type: "success" | "error" | "info";
@@ -330,7 +309,6 @@ export function PatientDashboard() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // ── Load initial data ──
   const load = async () => {
     setLoading(true);
     try {
@@ -341,17 +319,16 @@ export function PatientDashboard() {
       setDoctors(doctorsData);
       setAppointments(appointmentsData);
     } catch {
-      showToast("Failed to load dashboard data.", "error");
+      showToast(t("patientDashboard.failedLoadDashboard"), "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
-  // ── View / toggle slots ──
   const handleViewSlots = async (doctorId: string) => {
     if (expandedDoctorId === doctorId) {
       setExpandedDoctorId(null);
@@ -359,26 +336,25 @@ export function PatientDashboard() {
     }
     setExpandedDoctorId(doctorId);
 
-    if (slotCache[doctorId]) return; // already cached
+    if (slotCache[doctorId]) return;
 
     setLoadingSlots(true);
     try {
       const res = await apiGetSlots(doctorId);
       setSlotCache((prev) => ({ ...prev, [doctorId]: res.availableSlots }));
     } catch {
-      showToast("Failed to load available slots.", "error");
+      showToast(t("patientDashboard.failedLoadSlots"), "error");
     } finally {
       setLoadingSlots(false);
     }
   };
 
-  // ── Book slot ──
   const handleBook = async (doctorId: string, slot: string) => {
     setBooking(true);
     setBookingSlot(slot);
     try {
       await apiBookAppointment({ doctorId, slot });
-      showToast("Appointment booked successfully!", "success");
+      showToast(t("patientDashboard.bookedSuccess"), "success");
 
       const [slotsRes, apptRes] = await Promise.all([
         apiGetSlots(doctorId),
@@ -387,17 +363,12 @@ export function PatientDashboard() {
       setSlotCache((prev) => ({ ...prev, [doctorId]: slotsRes.availableSlots }));
       setAppointments(apptRes);
     } catch (err) {
-      showToast(
-        err instanceof Error ? err.message : "Failed to book appointment.",
-        "error"
-      );
+      showToast(err instanceof Error ? err.message : t("patientDashboard.failedBook"), "error");
     } finally {
       setBooking(false);
       setBookingSlot(null);
     }
   };
-
-  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -405,33 +376,29 @@ export function PatientDashboard() {
       style={{ background: "var(--color-background-tertiary, #f5f4f0)" }}
     >
       <div className="mx-auto max-w-4xl space-y-10">
-
-        {/* ── Header ── */}
         <div>
           <h1
             className="text-3xl text-zinc-900"
             style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontWeight: 400 }}
           >
-            Good morning,{" "}
-            <em className="not-italic text-[#1D9E75]">Patient.</em>
+            {t("patientDashboard.greeting")} <em className="not-italic text-[#1D9E75]">{t("patientDashboard.role")}</em>
           </h1>
           <p className="mt-1 text-sm font-light text-zinc-500">
-            Book appointments · View your upcoming consultations
+            {t("patientDashboard.subtitle")}
           </p>
           {toast && <Toast message={toast.msg} type={toast.type} />}
         </div>
 
-        {/* ── Doctors ── */}
         <section>
           <div className="mb-4 flex items-center justify-between">
             <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-              Verified doctors
+              {t("patientDashboard.verifiedDoctors")}
             </p>
             {loading && <Spinner />}
           </div>
 
           {!loading && doctors.length === 0 ? (
-            <EmptyState text="No verified doctors found." />
+            <EmptyState text={t("patientDashboard.noVerifiedDoctors")} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {doctors.map((doctor, i) => (
@@ -452,11 +419,10 @@ export function PatientDashboard() {
           )}
         </section>
 
-        {/* ── Appointments ── */}
         <section>
           <div className="mb-4 flex items-center justify-between">
             <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-              My appointments
+              {t("patientDashboard.myAppointments")}
             </p>
             <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs text-zinc-500">
               {appointments.length}
@@ -465,10 +431,10 @@ export function PatientDashboard() {
 
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <Spinner /> Loading appointments…
+              <Spinner /> {t("patientDashboard.loadingAppointments")}
             </div>
           ) : appointments.length === 0 ? (
-            <EmptyState text="No bookings yet. Pick a doctor above to get started." />
+            <EmptyState text={t("patientDashboard.noBookings")} />
           ) : (
             <div className="space-y-2">
               {appointments.map((appt) => (

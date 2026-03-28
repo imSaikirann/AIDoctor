@@ -1,14 +1,13 @@
-import { useState } from "react";
+﻿import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { apiRegisterDoctor } from "@/services/auth.api";
-// import { getErrorMessage } from "@/api/http";
-// import { apiRegisterDoctor } from "../api/auth";
-// import { getErrorMessage } from "../api/http";
 
 export function RegisterDoctor() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -21,7 +20,7 @@ export function RegisterDoctor() {
     e?.preventDefault();
 
     if (!email || !password || !name || !specialization) {
-      setMsg("Please fill all required fields");
+      setMsg(t("auth.fillRequired"));
       return;
     }
 
@@ -34,13 +33,13 @@ export function RegisterDoctor() {
         password,
         name,
         specialization,
-        calLink: calLink.trim() ? calLink.trim() : undefined
+        calLink: calLink.trim() ? calLink.trim() : undefined,
       });
 
       setMsg(res.message);
     } catch (err: unknown) {
-    //   setMsg(getErrorMessage(err));
-    console.log(err)
+      console.log(err);
+      setMsg(t("common.error"));
     } finally {
       setLoading(false);
     }
@@ -49,22 +48,18 @@ export function RegisterDoctor() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <Card className="w-full max-w-md p-6 shadow-lg">
-
-        {/* Header */}
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-semibold tracking-tight">
-            Doctor Registration
+            {t("auth.doctorRegistration")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Your account must be verified by admin before patients can book.
+            {t("auth.doctorVerifyNotice")}
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={submit} className="space-y-4">
-
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">{t("auth.fullName")}</Label>
             <Input
               id="name"
               placeholder="Dr. John Doe"
@@ -75,7 +70,7 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("common.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -88,11 +83,11 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("common.password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="••••••••"
+              placeholder="********"
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -101,7 +96,7 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="specialization">Specialization</Label>
+            <Label htmlFor="specialization">{t("auth.specialization")}</Label>
             <Input
               id="specialization"
               placeholder="Cardiologist, Dermatologist..."
@@ -112,7 +107,7 @@ export function RegisterDoctor() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="calLink">Cal.com Event Link</Label>
+            <Label htmlFor="calLink">{t("auth.calLink")}</Label>
             <Input
               id="calLink"
               placeholder="https://cal.com/yourname/30min"
@@ -120,28 +115,20 @@ export function RegisterDoctor() {
               onChange={(e) => setCalLink(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Use your Cal.com event booking link (not dashboard link).
+              {t("auth.calLinkHelp")}
             </p>
           </div>
 
-          {/* Message */}
           {msg && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
               {msg}
             </div>
           )}
 
-          {/* Button */}
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? "Registering..." : "Register Doctor"}
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading ? t("auth.registeringDoctor") : t("auth.registerDoctor")}
           </Button>
-
         </form>
-
       </Card>
     </div>
   );

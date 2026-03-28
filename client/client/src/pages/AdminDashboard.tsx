@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { DoctorPublic, User, Feedback } from "../types";
 import {
   apiAdminUsers,
@@ -23,6 +24,7 @@ type UserWithDoctorProfile = User & {
 };
 
 export function AdminDashboard() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserWithDoctorProfile[]>([]);
   const [doctors, setDoctors] = useState<DoctorPublic[]>([]);
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -61,14 +63,14 @@ export function AdminDashboard() {
       setTotal(bookingsData.totalBookings);
     } catch (error) {
       console.log(error);
-      setMsg("Failed to load admin dashboard data.");
+      setMsg(t("adminDashboard.failedLoad"));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    void load();
   }, []);
 
   const verify = async (doctorId: string) => {
@@ -77,11 +79,11 @@ export function AdminDashboard() {
 
     try {
       await apiVerifyDoctor(doctorId);
-      setMsg("Doctor verified successfully.");
+      setMsg(t("adminDashboard.doctorVerified"));
       await load();
     } catch (error) {
       console.log(error);
-      setMsg("Failed to verify doctor.");
+      setMsg(t("adminDashboard.failedVerify"));
     } finally {
       setVerifyingId(null);
     }
@@ -90,21 +92,21 @@ export function AdminDashboard() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
       <div>
-        <h2 className="text-xl font-semibold">Admin Dashboard</h2>
+        <h2 className="text-xl font-semibold">{t("adminDashboard.title")}</h2>
         <p className="text-sm text-zinc-600">
-          Total bookings: <b>{total}</b>
+          {t("adminDashboard.totalBookings", { count: total })}
         </p>
         <Toast message={msg} />
       </div>
 
       <Card>
-        <h3 className="text-lg font-semibold">Doctors</h3>
+        <h3 className="text-lg font-semibold">{t("adminDashboard.doctors")}</h3>
 
         <div className="mt-3 space-y-3">
           {loading ? (
-            <div className="text-sm text-zinc-600">Loading doctors...</div>
+            <div className="text-sm text-zinc-600">{t("adminDashboard.loadingDoctors")}</div>
           ) : doctors.length === 0 ? (
-            <div className="text-sm text-zinc-600">No doctors found.</div>
+            <div className="text-sm text-zinc-600">{t("adminDashboard.noDoctors")}</div>
           ) : (
             doctors.map((doctor) => (
               <div
@@ -112,25 +114,27 @@ export function AdminDashboard() {
                 className="flex items-start justify-between gap-4 border-b pb-3 last:border-0"
               >
                 <div>
-                  <div className="font-medium">{doctor.name || "No name"}</div>
+                  <div className="font-medium">{doctor.name || t("adminDashboard.noName")}</div>
                   <div className="text-sm text-zinc-700">
-                    {doctor.specialization || "No specialization"}
+                    {doctor.specialization || t("adminDashboard.noSpecialization")}
                   </div>
                   <div className="text-xs text-zinc-500">
-                    verified: {String(doctor.verified)}
+                    {t("adminDashboard.verified", { value: String(doctor.verified) })}
                   </div>
                 </div>
 
                 {!doctor.verified ? (
                   <Button
-                    onClick={() => verify(doctor.id)}
+                    onClick={() => void verify(doctor.id)}
                     disabled={verifyingId === doctor.id}
                   >
-                    {verifyingId === doctor.id ? "Verifying..." : "Verify"}
+                    {verifyingId === doctor.id
+                      ? t("adminDashboard.verifying")
+                      : t("adminDashboard.verify")}
                   </Button>
                 ) : (
                   <Button variant="outline" disabled>
-                    Verified
+                    {t("adminDashboard.verifiedButton")}
                   </Button>
                 )}
               </div>
@@ -140,27 +144,30 @@ export function AdminDashboard() {
       </Card>
 
       <Card>
-        <h3 className="text-lg font-semibold">All Feedback</h3>
+        <h3 className="text-lg font-semibold">{t("adminDashboard.allFeedback")}</h3>
 
         <div className="mt-3 space-y-3">
           {loading ? (
-            <div className="text-sm text-zinc-600">Loading feedback...</div>
+            <div className="text-sm text-zinc-600">{t("adminDashboard.loadingFeedback")}</div>
           ) : feedbacks.length === 0 ? (
-            <div className="text-sm text-zinc-600">No feedback available.</div>
+            <div className="text-sm text-zinc-600">{t("adminDashboard.noFeedback")}</div>
           ) : (
             feedbacks.map((feedback) => (
               <div key={feedback.id} className="border-b pb-3 last:border-0">
                 <div className="font-medium">
-                  {feedback.doctor?.name} — Rating {feedback.rating}/5
+                  {t("adminDashboard.doctorRating", {
+                    name: feedback.doctor?.name ?? "-",
+                    rating: feedback.rating,
+                  })}
                 </div>
                 <div className="text-sm text-zinc-700">
-                  Patient: {feedback.patient?.email}
+                  {t("adminDashboard.patient", { email: feedback.patient?.email ?? "-" })}
                 </div>
                 <div className="text-sm text-zinc-700">
-                  Appointment: {feedback.appointment?.slot}
+                  {t("adminDashboard.appointment", { slot: feedback.appointment?.slot ?? "-" })}
                 </div>
                 <div className="text-sm text-zinc-600">
-                  {feedback.comment || "No comment"}
+                  {feedback.comment || t("common.noComment")}
                 </div>
               </div>
             ))
@@ -169,21 +176,18 @@ export function AdminDashboard() {
       </Card>
 
       <Card>
-        <h3 className="text-lg font-semibold">All Users</h3>
+        <h3 className="text-lg font-semibold">{t("adminDashboard.allUsers")}</h3>
 
         <div className="mt-3 space-y-2">
           {loading ? (
-            <div className="text-sm text-zinc-600">Loading users...</div>
+            <div className="text-sm text-zinc-600">{t("adminDashboard.loadingUsers")}</div>
           ) : users.length === 0 ? (
-            <div className="text-sm text-zinc-600">No users found.</div>
+            <div className="text-sm text-zinc-600">{t("adminDashboard.noUsers")}</div>
           ) : (
             users.map((user) => (
-              <div
-                key={user.id}
-                className="border-b pb-2 text-sm last:border-0"
-              >
+              <div key={user.id} className="border-b pb-2 text-sm last:border-0">
                 <span className="font-medium">{user.email}</span>
-                {user.role ? ` — ${user.role}` : ""}
+                {user.role ? ` - ${t(`navbar.roles.${user.role}`)}` : ""}
               </div>
             ))
           )}
