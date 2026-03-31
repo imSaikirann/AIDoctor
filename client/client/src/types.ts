@@ -52,6 +52,11 @@ export type EmergencyBookingResponse = {
   appointment: Appointment;
 };
 
+export type EmergencyBookingPayload = {
+  email?: string;
+  password?: string;
+};
+
 
 export type Feedback = {
   id: string;

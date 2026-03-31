@@ -78,7 +78,14 @@
     "joinCall": "Join Video Call",
     "bookingFailed": "Booking failed",
     "emergencyBookingFailed": "Emergency booking failed",
-    "emergencyConsultationAt": "Emergency consultation at {{date}}"
+    "emergencyConsultationAt": "Emergency consultation at {{date}}",
+    "emergencyFormTitle": "Emergency booking",
+    "emergencyFormSubtitle": "Fill this once and we will create your patient account and connect you right away.",
+    "emergencyEmailPlaceholder": "Enter your email",
+    "emergencyPasswordPlaceholder": "Create a password",
+    "emergencyFormHelp": "If this email already has a patient account, use the same password and we will sign you in and book the meeting.",
+    "emergencySubmit": "Create account and book now",
+    "emergencyFormRequired": "Please enter your email and password"
   },
   "patientDashboard": {
     "greeting": "Good morning,",

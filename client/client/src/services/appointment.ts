@@ -3,6 +3,7 @@ import type {
   DoctorPublic,
   Appointment,
   EmergencyBookingResponse,
+  EmergencyBookingPayload,
 } from "../types";
 
 export async function apiGetVerifiedDoctors(): Promise<DoctorPublic[]> {
@@ -20,8 +21,13 @@ export async function apiGetSlots(
 }
 
 
-export async function apiEmergencyBooking(): Promise<EmergencyBookingResponse> {
-  const res = await api.post<EmergencyBookingResponse>("/appointments/emergency");
+export async function apiEmergencyBooking(
+  payload?: EmergencyBookingPayload
+): Promise<EmergencyBookingResponse> {
+  const res = await api.post<EmergencyBookingResponse>(
+    "/appointments/emergency",
+    payload ?? {}
+  );
   return res.data;
 }
 

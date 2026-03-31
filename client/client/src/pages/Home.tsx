@@ -1,7 +1,7 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { isAxiosError } from "axios";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/auth/useAuth";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   apiBookAppointment,
@@ -56,7 +56,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 export default function Home() {
   const { t, i18n } = useTranslation();
-  const navigate = useNavigate();
+  const { user, refresh } = useAuth();
 
   const [doctors, setDoctors] = useState<DoctorPublic[]>([]);
   const [expandedDoctor, setExpandedDoctor] = useState<string | null>(null);
@@ -68,6 +68,9 @@ export default function Home() {
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState<Record<string, boolean>>({});
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
+  const [showEmergencyForm, setShowEmergencyForm] = useState(false);
+  const [emergencyEmail, setEmergencyEmail] = useState("");
+  const [emergencyPassword, setEmergencyPassword] = useState("");
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -110,24 +113,46 @@ export default function Home() {
     }
   };
 
-  const handleEmergencyBooking = async () => {
+  const bookEmergency = async (payload?: { email?: string; password?: string }) => {
     try {
       setBookingSlot("emergency");
 
-      const res = await apiEmergencyBooking();
+      const res = await apiEmergencyBooking(payload);
+      await refresh();
       setJoinLink(res.meetingUrl ?? null);
       setConfirmedDoctor(res.doctor);
       setConfirmedSlot(res.slot);
+      setShowEmergencyForm(false);
+      setEmergencyEmail("");
+      setEmergencyPassword("");
     } catch (err) {
-      if (isAxiosError(err) && err.response?.status === 401) {
-        navigate("/login");
-        return;
-      }
-
       alert(getErrorMessage(err, t("home.emergencyBookingFailed")));
     } finally {
       setBookingSlot(null);
     }
+  };
+
+  const handleEmergencyBooking = () => {
+    if (user) {
+      void bookEmergency();
+      return;
+    }
+
+    setShowEmergencyForm((prev) => !prev);
+  };
+
+  const handleEmergencySubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!emergencyEmail.trim() || !emergencyPassword.trim()) {
+      alert(t("home.emergencyFormRequired"));
+      return;
+    }
+
+    await bookEmergency({
+      email: emergencyEmail.trim(),
+      password: emergencyPassword,
+    });
   };
 
   const handleBook = async (slot: string) => {
@@ -156,7 +181,7 @@ export default function Home() {
       }));
     } catch (err) {
       if (isAxiosError(err) && err.response?.status === 401) {
-        navigate("/login");
+        window.location.href = "/login";
         return;
       }
 
@@ -201,6 +226,76 @@ export default function Home() {
             ? t("home.emergencyConnecting")
             : t("home.getImmediateDoctor")}
         </button>
+
+        {showEmergencyForm && !user && (
+          <form
+            onSubmit={(event) => void handleEmergencySubmit(event)}
+            className="mb-6 rounded-2xl border border-red-100 bg-white p-5 shadow-sm"
+          >
+            <div className="mb-4">
+              <h2
+                className="text-2xl text-gray-900"
+                style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+              >
+                {t("home.emergencyFormTitle")}
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {t("home.emergencyFormSubtitle")}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-sm text-gray-700">
+                <span className="mb-1 block">{t("common.email")}</span>
+                <input
+                  type="email"
+                  value={emergencyEmail}
+                  onChange={(event) => setEmergencyEmail(event.target.value)}
+                  placeholder={t("home.emergencyEmailPlaceholder")}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-[#1D9E75]"
+                  autoComplete="email"
+                />
+              </label>
+
+              <label className="text-sm text-gray-700">
+                <span className="mb-1 block">{t("common.password")}</span>
+                <input
+                  type="password"
+                  value={emergencyPassword}
+                  onChange={(event) => setEmergencyPassword(event.target.value)}
+                  placeholder={t("home.emergencyPasswordPlaceholder")}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-[#1D9E75]"
+                  autoComplete="new-password"
+                />
+              </label>
+            </div>
+
+            <p className="mt-3 text-xs leading-5 text-gray-500">
+              {t("home.emergencyFormHelp")}
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={bookingSlot === "emergency"}
+                className="rounded-xl bg-[#1D9E75] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#0F6E56] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {bookingSlot === "emergency"
+                  ? t("home.emergencyConnecting")
+                  : t("home.emergencySubmit")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowEmergencyForm(false)}
+                disabled={bookingSlot === "emergency"}
+                className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {t("common.cancel")}
+              </button>
+            </div>
+          </form>
+        )}
 
         <p className="mb-4 text-xs font-medium uppercase tracking-widest text-gray-400">
           {t("home.availableDoctors")}

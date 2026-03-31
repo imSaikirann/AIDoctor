@@ -1,10 +1,27 @@
 import { Request, Response, Router } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
-import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-router.use(requireAuth, requireRole("PATIENT"));
+type JwtPayload = {
+  id: string;
+  role: "ADMIN" | "DOCTOR" | "PATIENT";
+};
+
+function getUserFromToken(req: Request): JwtPayload | null {
+  const token = req.cookies?.token;
+  if (!token) {
+    return null;
+  }
+
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
+  } catch {
+    return null;
+  }
+}
 
 function normalizeUrl(url: string): string {
   return url.startsWith("http") ? url : `https://${url}`;
@@ -32,9 +49,65 @@ function buildEmergencyMeetingUrl(
 
 router.post("/emergency", async (req: Request, res: Response) => {
   try {
-    const userId = req.user?.id;
+    const currentUser = getUserFromToken(req);
+    let userId = currentUser?.id;
+
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      const email = req.body.email?.trim().toLowerCase();
+      const password = req.body.password?.trim();
+
+      if (!email || !password) {
+        return res.status(400).json({
+          message: "Email and password are required for emergency booking.",
+        });
+      }
+
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (existingUser) {
+        if (existingUser.role !== "PATIENT") {
+          return res.status(409).json({
+            message: "This email is already registered as a non-patient account.",
+          });
+        }
+
+        const validPassword = await bcrypt.compare(password, existingUser.password);
+        if (!validPassword) {
+          return res.status(401).json({
+            message: "Incorrect password for this existing account.",
+          });
+        }
+
+        userId = existingUser.id;
+      } else {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const createdUser = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            role: "PATIENT",
+          },
+        });
+
+        userId = createdUser.id;
+      }
+
+      const token = jwt.sign(
+        { id: userId, role: "PATIENT" },
+        process.env.JWT_SECRET as string
+      );
+
+      res.cookie("token", token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+    } else if (currentUser?.role !== "PATIENT") {
+      return res.status(403).json({
+        message: "Only patient accounts can create emergency bookings.",
+      });
     }
 
     const doctors = await prisma.doctor.findMany({
@@ -95,7 +168,7 @@ router.post("/emergency", async (req: Request, res: Response) => {
     const appointment = await prisma.appointment.create({
       data: {
         doctorId: selectedDoctor.id,
-        userId,
+        userId: userId!,
         slot,
         meetingUrl,
       },
