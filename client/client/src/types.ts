@@ -2,6 +2,8 @@ export type Role = "ADMIN" | "DOCTOR" | "PATIENT";
 
 export type DoctorPublic = {
   id: string;
+  userId?: string;
+  email?: string;
   name: string;
   specialization: string;
   calLink: string | null;
@@ -12,11 +14,20 @@ export type DoctorPublic = {
 export type DoctorProfile = {
   id: string;
   userId: string;
+  email?: string;
   name: string;
   specialization: string;
   calLink?: string | null;
   verified: boolean;
   createdAt?: string;
+};
+
+export type UpdateDoctorPayload = {
+  email: string;
+  name: string;
+  specialization: string;
+  calLink?: string | null;
+  verified: boolean;
 };
 
 export type User = {

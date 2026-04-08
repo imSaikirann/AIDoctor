@@ -18,6 +18,138 @@ router.patch("/verify/:id", async (req, res) => {
         res.status(500).json({ message: "Failed to verify doctor" });
     }
 });
+// UPDATE DOCTOR
+router.patch("/doctors/:id", async (req, res) => {
+    try {
+        const { email, name, specialization, calLink, verified, } = req.body;
+        const existingDoctor = await prisma.doctor.findUnique({
+            where: { id: req.params.id },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                    },
+                },
+            },
+        });
+        if (!existingDoctor) {
+            res.status(404).json({ message: "Doctor not found" });
+            return;
+        }
+        const normalizedEmail = email?.trim().toLowerCase();
+        const trimmedName = name?.trim();
+        const trimmedSpecialization = specialization?.trim();
+        const normalizedCalLink = calLink === undefined ? undefined : calLink?.trim() || null;
+        if (trimmedName !== undefined && !trimmedName) {
+            res.status(400).json({ message: "Doctor name is required" });
+            return;
+        }
+        if (trimmedSpecialization !== undefined && !trimmedSpecialization) {
+            res.status(400).json({ message: "Specialization is required" });
+            return;
+        }
+        if (normalizedEmail !== undefined && !normalizedEmail) {
+            res.status(400).json({ message: "Email is required" });
+            return;
+        }
+        if (normalizedEmail && normalizedEmail !== existingDoctor.user.email) {
+            const emailOwner = await prisma.user.findUnique({
+                where: { email: normalizedEmail },
+                select: { id: true },
+            });
+            if (emailOwner && emailOwner.id !== existingDoctor.userId) {
+                res.status(409).json({ message: "Email already registered" });
+                return;
+            }
+        }
+        const doctor = await prisma.$transaction(async (tx) => {
+            if (normalizedEmail && normalizedEmail !== existingDoctor.user.email) {
+                await tx.user.update({
+                    where: { id: existingDoctor.userId },
+                    data: { email: normalizedEmail },
+                });
+            }
+            return tx.doctor.update({
+                where: { id: req.params.id },
+                data: {
+                    ...(trimmedName !== undefined ? { name: trimmedName } : {}),
+                    ...(trimmedSpecialization !== undefined
+                        ? { specialization: trimmedSpecialization }
+                        : {}),
+                    ...(normalizedCalLink !== undefined
+                        ? { calLink: normalizedCalLink }
+                        : {}),
+                    ...(verified !== undefined ? { verified: Boolean(verified) } : {}),
+                },
+                include: {
+                    user: {
+                        select: {
+                            email: true,
+                        },
+                    },
+                },
+            });
+        });
+        res.json({
+            id: doctor.id,
+            userId: doctor.userId,
+            email: doctor.user.email,
+            name: doctor.name,
+            specialization: doctor.specialization,
+            calLink: doctor.calLink,
+            verified: doctor.verified,
+            createdAt: doctor.createdAt,
+        });
+    }
+    catch (error) {
+        console.log("UPDATE DOCTOR ERROR:", error);
+        res.status(500).json({ message: "Failed to update doctor" });
+    }
+});
+// DELETE DOCTOR
+router.delete("/doctors/:id", async (req, res) => {
+    try {
+        const existingDoctor = await prisma.doctor.findUnique({
+            where: { id: req.params.id },
+            select: {
+                id: true,
+                userId: true,
+            },
+        });
+        if (!existingDoctor) {
+            res.status(404).json({ message: "Doctor not found" });
+            return;
+        }
+        const [appointmentCount, feedbackCount] = await Promise.all([
+            prisma.appointment.count({
+                where: { doctorId: existingDoctor.id },
+            }),
+            prisma.feedback.count({
+                where: { doctorId: existingDoctor.id },
+            }),
+        ]);
+        if (appointmentCount > 0 || feedbackCount > 0) {
+            res.status(400).json({
+                message: "Cannot delete doctor with linked appointments or feedback. Update the profile instead.",
+            });
+            return;
+        }
+        await prisma.$transaction(async (tx) => {
+            await tx.doctor.delete({
+                where: { id: existingDoctor.id },
+            });
+            await tx.user.delete({
+                where: { id: existingDoctor.userId },
+            });
+        });
+        res.json({ message: "Doctor deleted successfully" });
+    }
+    catch (error) {
+        console.log("DELETE DOCTOR ERROR:", error);
+        res.status(500).json({ message: "Failed to delete doctor" });
+    }
+});
 // ALL USERS
 router.get("/users", async (_req, res) => {
     try {
@@ -25,6 +157,7 @@ router.get("/users", async (_req, res) => {
             select: {
                 id: true,
                 email: true,
+                role: true,
                 createdAt: true,
                 doctorProfile: true,
             },

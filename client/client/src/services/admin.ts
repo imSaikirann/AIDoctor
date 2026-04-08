@@ -1,16 +1,26 @@
 import { api } from "@/lib/axios";
-import type { User } from "../types";
-
-export type DoctorPublic = {
-  id: string;
-  name?: string;
-  specialization?: string;
-  verified: boolean;
-  userId?: string;
-};
+import type {
+  ApiMessage,
+  DoctorPublic,
+  UpdateDoctorPayload,
+  User,
+} from "../types";
 
 export async function apiVerifyDoctor(id: string): Promise<DoctorPublic> {
   const res = await api.patch<DoctorPublic>(`/admin/verify/${id}`);
+  return res.data;
+}
+
+export async function apiUpdateDoctor(
+  id: string,
+  payload: UpdateDoctorPayload
+): Promise<DoctorPublic> {
+  const res = await api.patch<DoctorPublic>(`/admin/doctors/${id}`, payload);
+  return res.data;
+}
+
+export async function apiDeleteDoctor(id: string): Promise<ApiMessage> {
+  const res = await api.delete<ApiMessage>(`/admin/doctors/${id}`);
   return res.data;
 }
 
