@@ -1,27 +1,48 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { isAxiosError } from "axios";
 import { useAuth } from "@/auth/useAuth";
-import type { DoctorPatient, MedicalRecord } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { getApiErrorMessage } from "@/lib/api-error";
 import {
   apiCreateMedicalRecord,
+  apiDeleteMedicalRecord,
   apiGetDoctorPatients,
   apiGetMyMedicalRecords,
   apiGetPatientMedicalRecords,
+  apiUpdateMedicalRecord,
 } from "@/services/medicalRecords";
+import type {
+  CreateMedicalRecordPayload,
+  DoctorPatient,
+  MedicalRecord,
+} from "@/types";
 
 function formatDate(value: string) {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
 }
 
-function getErrorMessage(error: unknown, fallback: string) {
-  if (isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data?.message ?? fallback;
-  }
-  if (error instanceof Error && error.message) return error.message;
-  return fallback;
+function toDateTimeLocal(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60 * 1000).toISOString().slice(0, 16);
 }
+
+type FormState = {
+  title: string;
+  recordType: string;
+  content: string;
+  eventAt: string;
+};
+
+const initialFormState: FormState = {
+  title: "",
+  recordType: "General",
+  content: "",
+  eventAt: "",
+};
 
 export default function MedicalRecordsPage() {
   const { user } = useAuth();
@@ -29,22 +50,20 @@ export default function MedicalRecordsPage() {
 
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [patients, setPatients] = useState<DoctorPatient[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>("");
+  const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [form, setForm] = useState<FormState>(initialFormState);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-
-  const [title, setTitle] = useState("");
-  const [recordType, setRecordType] = useState("General");
-  const [content, setContent] = useState("");
-  const [eventAt, setEventAt] = useState("");
 
   const canCreate = role === "PATIENT" || role === "DOCTOR";
 
   const activePatientLabel = useMemo(() => {
     if (role !== "DOCTOR") return user?.email ?? "";
-    return patients.find((p) => p.id === selectedPatientId)?.email ?? "";
+    return patients.find((patient) => patient.id === selectedPatientId)?.email ?? "";
   }, [patients, role, selectedPatientId, user?.email]);
 
   const loadPatientRecords = async (patientId: string) => {
@@ -52,8 +71,13 @@ export default function MedicalRecordsPage() {
       setRecords([]);
       return;
     }
-    const list = await apiGetPatientMedicalRecords(patientId);
-    setRecords(list);
+
+    setRecords(await apiGetPatientMedicalRecords(patientId));
+  };
+
+  const resetForm = () => {
+    setForm(initialFormState);
+    setEditingRecordId(null);
   };
 
   const load = async () => {
@@ -62,27 +86,26 @@ export default function MedicalRecordsPage() {
 
     try {
       if (role === "PATIENT") {
-        const list = await apiGetMyMedicalRecords();
-        setRecords(list);
+        setRecords(await apiGetMyMedicalRecords());
       } else if (role === "DOCTOR") {
         const doctorPatients = await apiGetDoctorPatients();
         setPatients(doctorPatients);
 
-        const initialPatientId = selectedPatientId || doctorPatients[0]?.id || "";
-        setSelectedPatientId(initialPatientId);
-        await loadPatientRecords(initialPatientId);
+        const nextPatientId = selectedPatientId || doctorPatients[0]?.id || "";
+        setSelectedPatientId(nextPatientId);
+        await loadPatientRecords(nextPatientId);
       } else {
         setErrorMsg("Medical records are available only for patients and doctors.");
       }
     } catch (error) {
-      setErrorMsg(getErrorMessage(error, "Failed to load medical records."));
+      setErrorMsg(getApiErrorMessage(error, "Failed to load medical records."));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role]);
 
@@ -90,17 +113,46 @@ export default function MedicalRecordsPage() {
     setSelectedPatientId(patientId);
     setLoading(true);
     setErrorMsg("");
+    setSuccessMsg("");
+
     try {
       await loadPatientRecords(patientId);
     } catch (error) {
-      setErrorMsg(getErrorMessage(error, "Failed to load patient records."));
+      setErrorMsg(getApiErrorMessage(error, "Failed to load patient records."));
     } finally {
       setLoading(false);
     }
   };
 
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const updateForm = (key: keyof FormState, value: string) => {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const onEdit = (record: MedicalRecord) => {
+    setEditingRecordId(record.id);
+    setForm({
+      title: record.title,
+      recordType: record.recordType,
+      content: record.content,
+      eventAt: toDateTimeLocal(record.eventAt),
+    });
+    setErrorMsg("");
+    setSuccessMsg("");
+  };
+
+  const buildPayload = (): CreateMedicalRecordPayload => ({
+    title: form.title.trim(),
+    recordType: form.recordType.trim(),
+    content: form.content.trim(),
+    eventAt: form.eventAt ? new Date(form.eventAt).toISOString() : undefined,
+    patientId: role === "DOCTOR" ? selectedPatientId : undefined,
+  });
+
+  const onSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     if (!canCreate) return;
 
     setSubmitting(true);
@@ -108,25 +160,52 @@ export default function MedicalRecordsPage() {
     setSuccessMsg("");
 
     try {
-      const payload = {
-        title: title.trim(),
-        recordType: recordType.trim(),
-        content: content.trim(),
-        eventAt: eventAt ? new Date(eventAt).toISOString() : undefined,
-        patientId: role === "DOCTOR" ? selectedPatientId : undefined,
-      };
+      const payload = buildPayload();
 
-      await apiCreateMedicalRecord(payload);
-      setSuccessMsg("Medical record saved securely.");
-      setTitle("");
-      setRecordType("General");
-      setContent("");
-      setEventAt("");
+      if (editingRecordId) {
+        await apiUpdateMedicalRecord(editingRecordId, payload);
+        setSuccessMsg("Medical record updated successfully.");
+      } else {
+        await apiCreateMedicalRecord(payload);
+        setSuccessMsg("Medical record saved securely.");
+      }
+
+      resetForm();
       await load();
     } catch (error) {
-      setErrorMsg(getErrorMessage(error, "Failed to save medical record."));
+      setErrorMsg(
+        getApiErrorMessage(
+          error,
+          editingRecordId
+            ? "Failed to update medical record."
+            : "Failed to save medical record."
+        )
+      );
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onDelete = async (recordId: string) => {
+    if (!window.confirm("Delete this medical record? This cannot be undone.")) {
+      return;
+    }
+
+    setDeletingId(recordId);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const response = await apiDeleteMedicalRecord(recordId);
+      if (editingRecordId === recordId) {
+        resetForm();
+      }
+      setSuccessMsg(response.message || "Medical record deleted successfully.");
+      await load();
+    } catch (error) {
+      setErrorMsg(getApiErrorMessage(error, "Failed to delete medical record."));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -135,7 +214,7 @@ export default function MedicalRecordsPage() {
       <div>
         <h1 className="text-2xl font-semibold text-zinc-900">Medical Records</h1>
         <p className="mt-1 text-sm text-zinc-600">
-          Encrypted long-term patient history storage for secure continuity of care.
+          Secure history, prescriptions, and visit notes with add, edit, and delete support.
         </p>
       </div>
 
@@ -146,7 +225,7 @@ export default function MedicalRecordsPage() {
           </label>
           <select
             value={selectedPatientId}
-            onChange={(e) => onDoctorPatientChange(e.target.value)}
+            onChange={(event) => void onDoctorPatientChange(event.target.value)}
             className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
           >
             {patients.length === 0 ? (
@@ -167,20 +246,28 @@ export default function MedicalRecordsPage() {
           onSubmit={onSubmit}
           className="space-y-4 rounded-xl border border-zinc-200 bg-white p-4"
         >
-          <h2 className="text-lg font-semibold text-zinc-900">Add Record</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-zinc-900">
+              {editingRecordId ? "Edit Record" : "Add Record"}
+            </h2>
+            {editingRecordId ? (
+              <Button type="button" variant="outline" onClick={resetForm}>
+                Cancel Edit
+              </Button>
+            ) : null}
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-zinc-700">
                 Title
               </label>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+              <Input
+                value={form.title}
+                onChange={(event) => updateForm("title", event.target.value)}
                 required
                 minLength={3}
                 maxLength={120}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                 placeholder="Annual health check summary"
               />
             </div>
@@ -189,13 +276,12 @@ export default function MedicalRecordsPage() {
               <label className="mb-1 block text-sm font-medium text-zinc-700">
                 Record type
               </label>
-              <input
-                value={recordType}
-                onChange={(e) => setRecordType(e.target.value)}
+              <Input
+                value={form.recordType}
+                onChange={(event) => updateForm("recordType", event.target.value)}
                 required
                 minLength={2}
                 maxLength={40}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
                 placeholder="Lab, Prescription, Diagnosis"
               />
             </div>
@@ -205,11 +291,10 @@ export default function MedicalRecordsPage() {
             <label className="mb-1 block text-sm font-medium text-zinc-700">
               Event date and time
             </label>
-            <input
+            <Input
               type="datetime-local"
-              value={eventAt}
-              onChange={(e) => setEventAt(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+              value={form.eventAt}
+              onChange={(event) => updateForm("eventAt", event.target.value)}
             />
           </div>
 
@@ -218,8 +303,8 @@ export default function MedicalRecordsPage() {
               Clinical notes / history details
             </label>
             <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+              value={form.content}
+              onChange={(event) => updateForm("content", event.target.value)}
               required
               minLength={5}
               maxLength={10000}
@@ -229,34 +314,39 @@ export default function MedicalRecordsPage() {
             />
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={submitting || (role === "DOCTOR" && !selectedPatientId)}
-            className="rounded-lg bg-[#1D9E75] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0F6E56] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {submitting ? "Saving..." : "Save Medical Record"}
-          </button>
+            {submitting
+              ? editingRecordId
+                ? "Updating..."
+                : "Saving..."
+              : editingRecordId
+                ? "Update Medical Record"
+                : "Save Medical Record"}
+          </Button>
         </form>
       )}
 
-      {errorMsg && (
+      {errorMsg ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
           {errorMsg}
         </div>
-      )}
+      ) : null}
 
-      {successMsg && (
+      {successMsg ? (
         <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700">
           {successMsg}
         </div>
-      )}
+      ) : null}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-zinc-900">
             History {activePatientLabel ? `- ${activePatientLabel}` : ""}
           </h2>
-          {loading && <span className="text-sm text-zinc-500">Loading...</span>}
+          {loading ? <span className="text-sm text-zinc-500">Loading...</span> : null}
         </div>
 
         {!loading && records.length === 0 ? (
@@ -269,17 +359,32 @@ export default function MedicalRecordsPage() {
               key={record.id}
               className="rounded-xl border border-zinc-200 bg-white p-4"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-base font-semibold text-zinc-900">
-                  {record.title}
-                </h3>
-                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
-                  {record.recordType}
-                </span>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-semibold text-zinc-900">{record.title}</h3>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Event: {formatDate(record.eventAt)} | Added: {formatDate(record.createdAt)}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-700">
+                    {record.recordType}
+                  </span>
+                  <Button type="button" variant="outline" onClick={() => onEdit(record)}>
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={deletingId === record.id}
+                    onClick={() => void onDelete(record.id)}
+                  >
+                    {deletingId === record.id ? "Deleting..." : "Delete"}
+                  </Button>
+                </div>
               </div>
-              <p className="mt-1 text-xs text-zinc-500">
-                Event: {formatDate(record.eventAt)} | Added: {formatDate(record.createdAt)}
-              </p>
+
               <p className="mt-3 whitespace-pre-wrap text-sm text-zinc-700">
                 {record.content}
               </p>

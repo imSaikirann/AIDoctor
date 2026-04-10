@@ -13,6 +13,7 @@ import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Toast } from "../components/ui/toast";
 import { Input } from "../components/ui/input";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 type UserWithDoctorProfile = User & {
   doctorProfile?: {
@@ -95,7 +96,7 @@ export function AdminDashboard() {
       setTotal(bookingsData.totalBookings);
     } catch (error) {
       console.log(error);
-      setMsg(t("adminDashboard.failedLoad"));
+      setMsg(getApiErrorMessage(error, t("adminDashboard.failedLoad")));
     } finally {
       setLoading(false);
     }
@@ -129,7 +130,7 @@ export function AdminDashboard() {
       await load();
     } catch (error) {
       console.log(error);
-      setMsg(t("adminDashboard.failedVerify"));
+      setMsg(getApiErrorMessage(error, t("adminDashboard.failedVerify")));
     } finally {
       setVerifyingId(null);
     }
@@ -158,7 +159,7 @@ export function AdminDashboard() {
       await load();
     } catch (error) {
       console.log(error);
-      setMsg(t("adminDashboard.failedUpdate"));
+      setMsg(getApiErrorMessage(error, t("adminDashboard.failedUpdate")));
     } finally {
       setSavingId(null);
     }
@@ -180,7 +181,7 @@ export function AdminDashboard() {
       await load();
     } catch (error) {
       console.log(error);
-      setMsg(t("adminDashboard.failedDelete"));
+      setMsg(getApiErrorMessage(error, t("adminDashboard.failedDelete")));
     } finally {
       setDeletingId(null);
     }

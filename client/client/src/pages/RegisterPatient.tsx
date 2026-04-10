@@ -8,6 +8,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { apiRegisterPatient } from "@/services/auth.api";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export function RegisterPatient() {
   const { t } = useTranslation();
@@ -36,7 +37,7 @@ export function RegisterPatient() {
       nav("/");
     } catch (err: unknown) {
       console.log(err);
-      setMsg(t("common.error"));
+      setMsg(getApiErrorMessage(err, t("common.error")));
     } finally {
       setLoading(false);
     }

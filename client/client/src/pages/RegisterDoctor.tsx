@@ -5,6 +5,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Button } from "../components/ui/button";
 import { apiRegisterDoctor } from "@/services/auth.api";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export function RegisterDoctor() {
   const { t } = useTranslation();
@@ -37,9 +38,14 @@ export function RegisterDoctor() {
       });
 
       setMsg(res.message);
+      setEmail("");
+      setPassword("");
+      setName("");
+      setSpecialization("");
+      setCalLink("");
     } catch (err: unknown) {
       console.log(err);
-      setMsg(t("common.error"));
+      setMsg(getApiErrorMessage(err, t("common.error")));
     } finally {
       setLoading(false);
     }

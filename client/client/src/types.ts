@@ -128,6 +128,8 @@ export type CreateMedicalRecordPayload = {
   eventAt?: string;
 };
 
+export type UpdateMedicalRecordPayload = Partial<CreateMedicalRecordPayload>;
+
 
 
 export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED";

@@ -11,6 +11,11 @@ const createRecordSchema = z.object({
     content: z.string().min(5).max(10000),
     eventAt: z.string().datetime().optional(),
 });
+const updateRecordSchema = createRecordSchema.partial().refine((value) => Object.keys(value).length > 0, { message: "At least one medical record field is required" });
+function getValidationMessage(error) {
+    const issue = error.issues[0];
+    return issue?.message ?? "Invalid medical record payload";
+}
 async function doctorCanAccessPatient(doctorUserId, patientId) {
     const appointment = await prisma.appointment.findFirst({
         where: {
@@ -36,6 +41,50 @@ function formatRecord(record) {
         patient: record.patient,
         createdBy: record.createdBy,
     };
+}
+async function getAccessibleRecord(recordId, user) {
+    const record = await prisma.medicalRecord.findUnique({
+        where: { id: recordId },
+        include: {
+            patient: { select: { id: true, email: true, role: true } },
+            createdBy: { select: { id: true, email: true, role: true } },
+        },
+    });
+    if (!record) {
+        return { record: null, error: { status: 404, message: "Medical record not found" } };
+    }
+    if (user.role === "PATIENT") {
+        if (record.patientId !== user.id) {
+            return {
+                record: null,
+                error: { status: 403, message: "You can only manage your own medical records" },
+            };
+        }
+        return { record };
+    }
+    if (user.role === "DOCTOR") {
+        const canAccess = await doctorCanAccessPatient(user.id, record.patientId);
+        if (!canAccess) {
+            return {
+                record: null,
+                error: {
+                    status: 403,
+                    message: "You can only manage records for your own patients",
+                },
+            };
+        }
+        return { record };
+    }
+    return {
+        record: null,
+        error: { status: 403, message: "Role not allowed for medical records" },
+    };
+}
+function ensureAccessError(access) {
+    if (!access.error) {
+        throw new Error("Expected access error details to be present");
+    }
+    return access.error;
 }
 router.get("/my", requireAuth, requireRole("PATIENT"), async (req, res) => {
     try {
@@ -110,7 +159,7 @@ router.post("/", requireAuth, async (req, res) => {
         const parsed = createRecordSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
-                message: "Invalid medical record payload",
+                message: getValidationMessage(parsed.error),
                 issues: parsed.error.flatten(),
             });
         }
@@ -168,6 +217,79 @@ router.post("/", requireAuth, async (req, res) => {
     catch (error) {
         console.error("CREATE MEDICAL RECORD ERROR:", error);
         res.status(500).json({ message: "Failed to create medical record" });
+    }
+});
+router.put("/:id", requireAuth, async (req, res) => {
+    try {
+        const parsed = updateRecordSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                message: getValidationMessage(parsed.error),
+                issues: parsed.error.flatten(),
+            });
+        }
+        const access = await getAccessibleRecord(req.params.id, req.user);
+        if (!access.record) {
+            const error = ensureAccessError(access);
+            return res.status(error.status).json({ message: error.message });
+        }
+        const { patientId, title, recordType, content, eventAt } = parsed.data;
+        if (req.user.role === "PATIENT" && patientId && patientId !== req.user.id) {
+            return res
+                .status(403)
+                .json({ message: "Patients can only keep records under their own account" });
+        }
+        if (req.user.role === "DOCTOR" && patientId && patientId !== access.record.patientId) {
+            const canAccess = await doctorCanAccessPatient(req.user.id, patientId);
+            if (!canAccess) {
+                return res
+                    .status(403)
+                    .json({ message: "You can only move records to your own patients" });
+            }
+        }
+        const nextPatientId = patientId && req.user.role === "DOCTOR"
+            ? patientId
+            : req.user.role === "PATIENT"
+                ? req.user.id
+                : access.record.patientId;
+        const updated = await prisma.medicalRecord.update({
+            where: { id: req.params.id },
+            data: {
+                ...(title !== undefined ? { title } : {}),
+                ...(recordType !== undefined ? { recordType } : {}),
+                ...(content !== undefined
+                    ? { encryptedContent: encryptMedicalRecordContent(content) }
+                    : {}),
+                ...(eventAt !== undefined ? { eventAt: new Date(eventAt) } : {}),
+                ...(nextPatientId !== access.record.patientId ? { patientId: nextPatientId } : {}),
+            },
+            include: {
+                patient: { select: { id: true, email: true } },
+                createdBy: { select: { id: true, email: true, role: true } },
+            },
+        });
+        return res.json(formatRecord(updated));
+    }
+    catch (error) {
+        console.error("UPDATE MEDICAL RECORD ERROR:", error);
+        return res.status(500).json({ message: "Failed to update medical record" });
+    }
+});
+router.delete("/:id", requireAuth, async (req, res) => {
+    try {
+        const access = await getAccessibleRecord(req.params.id, req.user);
+        if (!access.record) {
+            const error = ensureAccessError(access);
+            return res.status(error.status).json({ message: error.message });
+        }
+        await prisma.medicalRecord.delete({
+            where: { id: req.params.id },
+        });
+        return res.json({ message: "Medical record deleted successfully" });
+    }
+    catch (error) {
+        console.error("DELETE MEDICAL RECORD ERROR:", error);
+        return res.status(500).json({ message: "Failed to delete medical record" });
     }
 });
 export default router;

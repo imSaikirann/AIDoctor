@@ -2,10 +2,42 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import { UpdateOrderStatusBody } from "../types.js";
+import { z } from "zod";
 // import type { UpdateOrderStatusBody } from "../types/order.types.js";
 
 const router = Router();
 
+const doctorUpdateSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email("Please enter a valid email address")
+      .transform((value) => value.toLowerCase())
+      .optional(),
+    name: z.string().trim().min(2, "Doctor name must be at least 2 characters").optional(),
+    specialization: z
+      .string()
+      .trim()
+      .min(2, "Specialization must be at least 2 characters")
+      .optional(),
+    calLink: z
+      .union([
+        z.string().trim().url("Please enter a valid booking link"),
+        z.literal(""),
+        z.null(),
+      ])
+      .optional(),
+    verified: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one doctor field is required",
+  });
+
+function getValidationMessage(error: z.ZodError) {
+  const issue = error.issues[0];
+  return issue?.message ?? "Invalid request payload";
+}
 
 router.use(requireAuth, requireRole("ADMIN"));
 
@@ -32,19 +64,17 @@ router.patch(
   "/doctors/:id",
   async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     try {
-      const {
-        email,
-        name,
-        specialization,
-        calLink,
-        verified,
-      } = req.body as {
-        email?: string;
-        name?: string;
-        specialization?: string;
-        calLink?: string | null;
-        verified?: boolean;
-      };
+      const parsed = doctorUpdateSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        res.status(400).json({
+          message: getValidationMessage(parsed.error),
+          issues: parsed.error.flatten(),
+        });
+        return;
+      }
+
+      const { email, name, specialization, calLink, verified } = parsed.data;
 
       const existingDoctor = await prisma.doctor.findUnique({
         where: { id: req.params.id },
@@ -66,23 +96,7 @@ router.patch(
       const normalizedEmail = email?.trim().toLowerCase();
       const trimmedName = name?.trim();
       const trimmedSpecialization = specialization?.trim();
-      const normalizedCalLink =
-        calLink === undefined ? undefined : calLink?.trim() || null;
-
-      if (trimmedName !== undefined && !trimmedName) {
-        res.status(400).json({ message: "Doctor name is required" });
-        return;
-      }
-
-      if (trimmedSpecialization !== undefined && !trimmedSpecialization) {
-        res.status(400).json({ message: "Specialization is required" });
-        return;
-      }
-
-      if (normalizedEmail !== undefined && !normalizedEmail) {
-        res.status(400).json({ message: "Email is required" });
-        return;
-      }
+      const normalizedCalLink = calLink === undefined ? undefined : calLink?.trim() || null;
 
       if (normalizedEmail && normalizedEmail !== existingDoctor.user.email) {
         const emailOwner = await prisma.user.findUnique({
@@ -161,24 +175,19 @@ router.delete(
         return;
       }
 
-      const [appointmentCount, feedbackCount] = await Promise.all([
-        prisma.appointment.count({
-          where: { doctorId: existingDoctor.id },
-        }),
-        prisma.feedback.count({
-          where: { doctorId: existingDoctor.id },
-        }),
-      ]);
-
-      if (appointmentCount > 0 || feedbackCount > 0) {
-        res.status(400).json({
-          message:
-            "Cannot delete doctor with linked appointments or feedback. Update the profile instead.",
-        });
-        return;
-      }
-
       await prisma.$transaction(async (tx) => {
+        await tx.feedback.deleteMany({
+          where: { doctorId: existingDoctor.id },
+        });
+
+        await tx.appointment.deleteMany({
+          where: { doctorId: existingDoctor.id },
+        });
+
+        await tx.medicalRecord.deleteMany({
+          where: { createdByUserId: existingDoctor.userId },
+        });
+
         await tx.doctor.delete({
           where: { id: existingDoctor.id },
         });

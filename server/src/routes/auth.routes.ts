@@ -3,19 +3,57 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 const router = Router();
+
+const emailSchema = z
+  .string()
+  .trim()
+  .email("Please enter a valid email address")
+  .transform((value) => value.toLowerCase());
+
+const patientRegistrationSchema = z.object({
+  email: emailSchema,
+  password: z.string().trim().min(6, "Password must be at least 6 characters"),
+});
+
+const doctorRegistrationSchema = patientRegistrationSchema.extend({
+  name: z.string().trim().min(2, "Doctor name must be at least 2 characters"),
+  specialization: z
+    .string()
+    .trim()
+    .min(2, "Specialization must be at least 2 characters"),
+  calLink: z
+    .union([z.string().trim().url("Please enter a valid booking link"), z.literal("")])
+    .optional()
+    .transform((value) => (value ? value.trim() : undefined)),
+});
+
+const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, "Password is required"),
+});
+
+function getValidationMessage(error: z.ZodError) {
+  const issue = error.issues[0];
+  return issue?.message ?? "Invalid request payload";
+}
 
 // PATIENT REGISTER
 router.post("/register/patient", async (req, res) => {
     try {
-      const email = req.body.email?.trim().toLowerCase();
-      const password = req.body.password?.trim();
+      const parsed = patientRegistrationSchema.safeParse(req.body);
 
-      if (!email || !password) {
-        res.status(400).json({ message: "Email and password are required" });
+      if (!parsed.success) {
+        res.status(400).json({
+          message: getValidationMessage(parsed.error),
+          issues: parsed.error.flatten(),
+        });
         return;
       }
+
+      const { email, password } = parsed.data;
 
       const existingUser = await prisma.user.findUnique({
         where: { email },
@@ -66,18 +104,17 @@ router.post("/register/patient", async (req, res) => {
 // DOCTOR REGISTER
 router.post("/register/doctor", async (req, res) =>{
     try {
-      const email = req.body.email?.trim().toLowerCase();
-      const password = req.body.password?.trim();
-      const name = req.body.name?.trim();
-      const specialization = req.body.specialization?.trim();
-      const calLink = req.body.calLink?.trim();
+      const parsed = doctorRegistrationSchema.safeParse(req.body);
 
-      if (!email || !password || !name || !specialization) {
+      if (!parsed.success) {
         res.status(400).json({
-          message: "Email, password, name and specialization are required",
+          message: getValidationMessage(parsed.error),
+          issues: parsed.error.flatten(),
         });
         return;
       }
+
+      const { email, password, name, specialization, calLink } = parsed.data;
 
       const existingUser = await prisma.user.findUnique({
         where: { email },
@@ -127,7 +164,16 @@ router.post("/register/doctor", async (req, res) =>{
 
 // LOGIN
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  const parsed = loginSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: getValidationMessage(parsed.error),
+      issues: parsed.error.flatten(),
+    });
+  }
+
+  const { email, password } = parsed.data;
 
   const user = await prisma.user.findUnique({
     where: { email },
