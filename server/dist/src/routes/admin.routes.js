@@ -179,7 +179,6 @@ router.get("/users", async (_req, res) => {
             select: {
                 id: true,
                 email: true,
-                role: true,
                 createdAt: true,
                 doctorProfile: true,
             },
@@ -332,7 +331,6 @@ router.get("/orders", async (_req, res) => {
                     select: {
                         id: true,
                         email: true,
-                        role: true,
                     },
                 },
                 items: {
@@ -362,7 +360,6 @@ router.get("/orders/:id", async (req, res) => {
                     select: {
                         id: true,
                         email: true,
-                        role: true,
                     },
                 },
                 items: {
@@ -456,7 +453,6 @@ router.patch("/orders/:id/status", async (req, res) => {
                     select: {
                         id: true,
                         email: true,
-                        role: true,
                     },
                 },
                 items: {
