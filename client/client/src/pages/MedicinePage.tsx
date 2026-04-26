@@ -83,17 +83,7 @@ export default function MedicinesPage() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {medicines.map((medicine) => (
             <Card key={medicine.id} className="p-4">
-              {medicine.imageUrl ? (
-                <img
-                  src={medicine.imageUrl}
-                  alt={medicine.name}
-                  className="mb-3 h-40 w-full rounded object-cover"
-                />
-              ) : (
-                <div className="mb-3 flex h-40 items-center justify-center rounded bg-zinc-100 text-sm text-zinc-500">
-                  {t("medicinesPage.noImage")}
-                </div>
-              )}
+
 
               <h2 className="text-lg font-semibold">{medicine.name}</h2>
 
