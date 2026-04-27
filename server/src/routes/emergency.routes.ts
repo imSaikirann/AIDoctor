@@ -27,24 +27,14 @@ function normalizeUrl(url: string): string {
   return url.startsWith("http") ? url : `https://${url}`;
 }
 
-function isDirectCallUrl(url: string): boolean {
-  return /(meet\.google\.com|zoom\.us|teams\.microsoft\.com|meet\.jit\.si|whereby\.com|cal\.video)/i.test(
-    url
-  );
-}
-
 function buildEmergencyMeetingUrl(
   doctorCalLink: string | null | undefined,
   doctorId: string
-): string {
+): string | null {
   if (doctorCalLink) {
-    const normalized = normalizeUrl(doctorCalLink);
-    if (isDirectCallUrl(normalized)) {
-      return normalized;
-    }
+    return normalizeUrl(doctorCalLink);
   }
-
-  return `https://meet.jit.si/ai-doctor-emergency-${doctorId}-${Date.now()}`;
+  return null;
 }
 
 router.post("/emergency", async (req: Request, res: Response) => {

@@ -18,17 +18,11 @@ function getUserFromToken(req) {
 function normalizeUrl(url) {
     return url.startsWith("http") ? url : `https://${url}`;
 }
-function isDirectCallUrl(url) {
-    return /(meet\.google\.com|zoom\.us|teams\.microsoft\.com|meet\.jit\.si|whereby\.com|cal\.video)/i.test(url);
-}
 function buildEmergencyMeetingUrl(doctorCalLink, doctorId) {
     if (doctorCalLink) {
-        const normalized = normalizeUrl(doctorCalLink);
-        if (isDirectCallUrl(normalized)) {
-            return normalized;
-        }
+        return normalizeUrl(doctorCalLink);
     }
-    return `https://meet.jit.si/ai-doctor-emergency-${doctorId}-${Date.now()}`;
+    return null;
 }
 router.post("/emergency", async (req, res) => {
     try {

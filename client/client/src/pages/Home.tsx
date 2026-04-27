@@ -397,7 +397,7 @@ export default function Home() {
           </div>
         )}
 
-        {joinLink && confirmedDoctor && confirmedSlot && (
+        {confirmedDoctor && confirmedSlot && (
           <div className="animate-in slide-in-from-bottom-3 mt-6 rounded-2xl border-2 border-[#9FE1CB] bg-white p-6 duration-300">
             <div className="mb-3 flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E1F5EE]">
@@ -436,37 +436,39 @@ export default function Home() {
               })}
             </p>
 
-            <a
-              href={joinLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1D9E75] px-5 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[#0F6E56]"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+            {joinLink && (
+              <a
+                href={joinLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#1D9E75] px-5 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[#0F6E56]"
               >
-                <rect
-                  x="1"
-                  y="3"
-                  width="9"
-                  height="10"
-                  rx="2"
-                  stroke="white"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="M10 6.5L15 4V12L10 9.5V6.5Z"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              {t("home.joinCall")}
-            </a>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect
+                    x="1"
+                    y="3"
+                    width="9"
+                    height="10"
+                    rx="2"
+                    stroke="white"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M10 6.5L15 4V12L10 9.5V6.5Z"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {t("home.joinCall")}
+              </a>
+            )}
           </div>
         )}
       </div>
